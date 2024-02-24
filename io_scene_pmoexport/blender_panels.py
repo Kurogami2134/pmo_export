@@ -1,0 +1,80 @@
+import bpy
+from io_scene_pmoexport import fix_uvs
+
+bpy.types.Material.rgba = bpy.props.FloatVectorProperty(size=4, default=(1.0, 1.0, 1.0, 1.0), min=0, max=1,
+                                                        subtype='COLOR')
+bpy.types.Material.shadow_rgba = bpy.props.FloatVectorProperty(size=4, default=(0.5, 0.5, 0.5, 1.0), min=0, max=1,
+                                                               subtype='COLOR')
+bpy.types.Material.texture_index = bpy.props.IntProperty(name="Texture Index", min=0)
+
+
+class PMOMaterialPanel(bpy.types.Panel):
+    bl_label = "PMO Material"
+    bl_idname = "MATERIAL_PT_pmo_layout"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "material"
+
+    def draw(self, context):
+        material = context.material
+
+        if material is None:
+            return
+
+        layout = self.layout
+
+        split = layout.split()
+
+        col = split.column()
+        col.prop(material, "rgba")
+        col = split.column()
+        col.prop(material, "shadow_rgba")
+
+        row = layout.row()
+        row.prop(material, "texture_index")
+
+
+class PreparePmoPanel(bpy.types.Panel):
+    bl_label = "Prepare PMO"
+    bl_idname = "OBJECT_PT_prepare_pmo"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "data"
+
+    def draw(self, context):
+        layout = self.layout
+
+        # obj = context.object
+
+        row = layout.row()
+        row.operator("object.prepare_pmo")
+
+
+class PreparePmo(bpy.types.Operator):
+    """Prepare uvs/vertex groups for pmo export."""
+    bl_idname = "object.prepare_pmo"
+    bl_label = "Run"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        fix_uvs.fix_uvs()
+        return {'FINISHED'}
+
+
+def register():
+    bpy.utils.register_class(PMOMaterialPanel)
+    bpy.utils.register_class(PreparePmoPanel)
+    bpy.utils.register_class(PreparePmo)
+
+
+def unregister():
+    bpy.utils.unregister_class(PMOMaterialPanel)
+    bpy.utils.unregister_class(PreparePmoPanel)
+    bpy.utils.unregister_class(PreparePmo)
+
+
+if __name__ == "__main__":
+    register()
