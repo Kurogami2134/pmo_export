@@ -5,20 +5,20 @@ P3RD_MODEL = b'102\x00'
 
 
 class PMODATA:
-    def __init__(self):
-        self.address = None
-        self.size = 0
+    def __init__(self) -> None:
+        self.address: None | int = None
+        self.size: int = 0
 
-    def tobytes(self):
+    def tobytes(self) -> bytes:
         pass
 
-    def calcsize(self):
+    def calcsize(self) -> int:
         return self.size
 
-    def move(self, add):
+    def move(self, add) -> None:
         self.address = add
 
-    def write(self, file):
+    def write(self, file) -> None:
         # add = file.tell()
         file.seek(self.address)
         file.write(self.tobytes())
@@ -26,24 +26,24 @@ class PMODATA:
 
 
 class PMOHeader(PMODATA):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.size = 0x40
-        self.pmo = b'pmo\x00'
-        self.ver = b'102\x00'
-        self.filesize = 0
-        self.clippingDistance = 0
-        self.scale = {"x": 0.0, "y": 0.0, "z": 0.0}
-        self.meshCount = 0
-        self.materialCount = 0
-        self.meshHeaderOffset = 0x40
-        self.tristripHeaderOffset = 0
-        self.materialRemapOffset = 0
-        self.boneDataOffset = 0
-        self.materialDataOffset = 0
-        self.meshDataOffset = 0
+        self.size: int = 0x40
+        self.pmo: bytes = b'pmo\x00'
+        self.ver: bytes = b'102\x00'
+        self.filesize: int = 0
+        self.clippingDistance: float = 0
+        self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self.meshCount: int = 0
+        self.materialCount: int = 0
+        self.meshHeaderOffset: int = 0x40
+        self.tristripHeaderOffset: int = 0
+        self.materialRemapOffset: int = 0
+        self.boneDataOffset: int = 0
+        self.materialDataOffset: int = 0
+        self.meshDataOffset: int = 0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (f'Version: {"1.2(P3RD)" if self.ver == P3RD_MODEL else "1.0(FU)"}\n'
                 f'Offsets:\n'
                 f'\tMeshHeader:\t{hex(self.meshHeaderOffset)}\n'
@@ -53,7 +53,7 @@ class PMOHeader(PMODATA):
                 f'\tMaterial:\t{hex(self.materialDataOffset)}\n'
                 f'\tMeshData:\t{hex(self.meshDataOffset)}')
 
-    def tobytes(self):
+    def tobytes(self) -> bytes:
         byted = self.pmo + self.ver + struct.pack("I", self.filesize) + struct.pack("f", self.clippingDistance)
         byted += struct.pack("3f", *self.scale.values())
         byted += struct.pack("H", self.meshCount) + struct.pack("H", self.materialCount) + struct.pack(
@@ -66,28 +66,28 @@ class PMOHeader(PMODATA):
 
 
 class MeshHeader(PMODATA):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.size = 0x30
-        self.scale = {"x": 0.0, "y": 0.0, "z": 0.0}
-        self.unknown = (b'\x00\x00\x00\x00\x00\x00\x80?\x00\x00\x80?\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x802'
-                        b'\x00\x00\xdf')
-        self.materialCount = 0
-        self.cumulativeMaterialCount = 0
-        self.tristripCount = 0
-        self.cumulativeTristripCount = 0
+        self.size: int = 0x30
+        self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self.unknown: bytes = (b'\x00\x00\x00\x00\x00\x00\x80?\x00\x00\x80?\x00\x00\x00\x00\x00\x00\x00\x00\x03'
+                               b'\x00\x00\x802\x00\x00\xdf')
+        self.materialCount: int = 0
+        self.cumulativeMaterialCount: int = 0
+        self.tristripCount: int = 0
+        self.cumulativeTristripCount: int = 0
 
-        self.meshes = []
-        self.materials = []
+        self.meshes: list[Mesh] = []
+        self.materials: list[Material] = []
 
-    def update(self):
+    def update(self) -> None:
         self.materialCount = len(self.materials)
         self.tristripCount = len(self.meshes)
 
-    def set_scale(self, scale):
+    def set_scale(self, scale) -> None:
         self.scale = scale
 
-    def tobytes(self):
+    def tobytes(self) -> bytes:
         byted = struct.pack("3f", *self.scale.values()) + self.unknown
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
@@ -95,27 +95,27 @@ class MeshHeader(PMODATA):
 
 
 class FUMeshHeader(PMODATA):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.size = 0x20
-        self.uvscale = {"u": 1.0, "v": 1.0}
-        self.unknown = bytes(8)  # b'\x03\x00\x00\x80\x00\x00\x00\x00'
-        self.materialCount = 0
-        self.cumulativeMaterialCount = 0
-        self.tristripCount = 0
-        self.cumulativeTristripCount = 0
+        self.size: int = 0x20
+        self.uvscale: dict[str, float] = {"u": 1.0, "v": 1.0}
+        self.unknown: bytes = bytes(8)  # b'\x03\x00\x00\x80\x00\x00\x00\x00'
+        self.materialCount: int = 0
+        self.cumulativeMaterialCount: int = 0
+        self.tristripCount: int = 0
+        self.cumulativeTristripCount: int = 0
 
-        self.meshes = []
-        self.materials = []
+        self.meshes: list[Mesh] = []
+        self.materials: list[Material] = []
 
-    def set_scale(self, scale):
+    def set_scale(self, scale) -> None:
         pass
 
-    def update(self):
+    def update(self) -> None:
         self.materialCount = len(self.materials)
         self.tristripCount = len(self.meshes)
 
-    def tobytes(self):
+    def tobytes(self) -> bytes:
         byted = struct.pack("2f", *self.uvscale.values()) + self.unknown
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
@@ -123,16 +123,18 @@ class FUMeshHeader(PMODATA):
 
 
 class TristripHeader(PMODATA):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.size = 0x10
-        self.materialOffset = 0
-        self.weightCount = 0
-        self.cumulativeWeightCount = 0
-        self.meshOffset = 0
-        self.vertexOffset = 0
-        self.indexOffset = 0
-        self.bones = []
+        self.size: int = 0x10
+        self.materialOffset: int = 0
+        self.weightCount: int = 0
+        self.cumulativeWeightCount: int = 0
+        self.meshOffset: int = 0
+        self.vertexOffset: int = 0
+        self.indexOffset: int = 0
+        self.bones: list[int] = []
+
+        self.backface_culling: bool = False
 
     @property
     def bone_data(self) -> bytes:
@@ -142,26 +144,26 @@ class TristripHeader(PMODATA):
 
         return data
 
-    def tobytes(self):
+    def tobytes(self) -> bytes:
         return struct.pack("BbH3I", self.materialOffset, self.weightCount, self.cumulativeWeightCount, self.meshOffset,
                            self.vertexOffset, self.indexOffset)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Tristrip header at: {self.address}\n' \
                f'Bone count {self.weightCount}/{self.cumulativeWeightCount+self.weightCount}\n' \
                f'Material: {self.materialOffset}'
 
 
 class Material(PMODATA):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.size = 0x10
-        self.rgba = {"r": 0, "g": 0, "b": 0, "a": 0}
-        self.rgba2 = {"r": 0, "g": 0, "b": 0, "a": 0}
-        self.textureIndex = 0
-        self.unknown = b'\x00\x00\x00\x00'
+        self.size: int = 0x10
+        self.rgba: dict[str, int] = {"r": 0, "g": 0, "b": 0, "a": 0}
+        self.rgba2: dict[str, int] = {"r": 0, "g": 0, "b": 0, "a": 0}
+        self.textureIndex: int = 0
+        self.unknown: bytes = b'\x00\x00\x00\x00'
 
-    def tobytes(self):
+    def tobytes(self) -> bytes:
         byted = b''
         for x in self.rgba.values():
             byted += struct.pack("B", int(x))
@@ -171,22 +173,35 @@ class Material(PMODATA):
         byted += self.unknown
         return byted
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.address == other.address
 
 
 class Vertex(PMODATA):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.postrans, self.textrans, self.nortrans = None, None, None
-        self.weitrans, self.color_trans = None, None
-        self.scale = {"x": 0.0, "y": 0.0, "z": 0.0}
-        self.verfor = "1B2H3b3h"  # vertex format
-        self.size = self.calcsize()
-        self.x, self.y, self.z = 0, 0, 0  # vertex coordinates
-        self.u, self.v = 0, 0  # uv coordinates
-        self.k, self.j, self.i = 0, 0, 0  # normals
-        self.w = None  # weight
+        self.postrans: int | None = None
+        self.textrans: int | None = None
+        self.nortrans: int | None = None
+        self.weitrans: int | None = None
+        self.color_trans: int | None = None
+        self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self.verfor: str = "1B2H3b3h"  # vertex format
+        self.size: int = self.calcsize()
+
+        # vertex coordinates
+        self.x: float = 0
+        self.y: float = 0
+        self.z: float = 0
+        # uv coordinates
+        self.u: float = 0
+        self.v: float = 0
+        # normals
+        self.k: float = 0
+        self.j: float = 0
+        self.i: float = 0
+        # weight
+        self.w: None | list[int] = None
         self.color = None
 
     def calcsize(self) -> int:
@@ -237,15 +252,15 @@ class Vertex(PMODATA):
 
 
 class Index(PMODATA):
-    def __init__(self, ind_format: str | None):
+    def __init__(self, ind_format: str | None) -> None:
         super().__init__()
-        self.format = ind_format
-        self.vertices = []
-        self.face_order = 0 if ind_format is None else None
-        self.primative_type = 4 if ind_format is None else None
-        self.index_offset = 0 if ind_format is None else None
+        self.format: str | None = ind_format
+        self.vertices: list = []
+        self.face_order: None | int = 0 if ind_format is None else None
+        self.primative_type: None | int = 4 if ind_format is None else None
+        self.index_offset: None | int = 0 if ind_format is None else None
 
-    def __iter__(self):
+    def __iter__(self) -> iter:
         return self.vertices.__iter__()
 
     def tobytes(self) -> bytes:
@@ -278,20 +293,20 @@ class Index(PMODATA):
 
 
 class Mesh(PMODATA):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.tri_header = None
-        self.vertex_format = None
-        self.index_format = None
-        self.vertices = None
-        self.indices = None
-        self.base_offset = None
-        self.bypass_transform = 0
+        self.tri_header: None | TristripHeader = None
+        self.vertex_format: None | str = None
+        self.index_format: None | str = None
+        self.vertices: None | list[Vertex] = None
+        self.indices: None | list[Index] = None
+        self.base_offset: None | int = None
+        self.bypass_transform: int = 0
 
-        self.face_order = None
+        self.face_order: None | int = None
 
     @property
-    def max_index(self):
+    def max_index(self) -> int:
         return max(0, *[max(index) for index in self.indices])
 
     @property
@@ -330,7 +345,7 @@ class Mesh(PMODATA):
 
         return command if command > 0 else command+2**32
 
-    def write(self, fd):
+    def write(self, fd) -> None:
         fd.seek(self.address)
         fd.write(self.to_pmo())
 
@@ -360,6 +375,7 @@ class Mesh(PMODATA):
             if index.face_order != face_order:
                 face_order = index.face_order
                 prims += struct.pack("I", face_order | 0x9B000000)
+                prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
 
             prim = 0x04000000
             prim |= index.primative_type << 16
@@ -416,19 +432,19 @@ class Mesh(PMODATA):
 
 
 class PMO:
-    def __init__(self):
+    def __init__(self) -> None:
         self.header = PMOHeader()
-        self.mat_remaps = []
-        self.mesh_header = []
+        self.mat_remaps: list[int] = []
+        self.mesh_header: list[MeshHeader] = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         string = (f'\nMeshes: {len(self.mesh_header)}\n'
                   f'Materials: {len(self.materials)}\n'
                   f'Vertices: {len(self.vertices)}\n')
         return repr(self.header) + string
 
     @property
-    def meshes(self):
+    def meshes(self) -> list[Mesh]:
         meshes = []
         for meshHeader in self.mesh_header:
             meshes.extend(meshHeader.meshes)
@@ -436,7 +452,7 @@ class PMO:
         return meshes
 
     @property
-    def materials(self):
+    def materials(self) -> list[Material]:
         materials = []
         for meshHeader in self.mesh_header:
             materials.extend(meshHeader.materials)
@@ -444,7 +460,7 @@ class PMO:
         return materials
 
     @property
-    def tristrips(self) -> list:
+    def tristrips(self) -> list[TristripHeader]:
         tristrips = []
         for mesh in self.meshes:
             tristrips.append(mesh.tri_header)
@@ -456,7 +472,7 @@ class PMO:
         return self.header.ver
 
     @property
-    def mat_remap_data(self):
+    def mat_remap_data(self) -> bytes:
         byted = b''
         if self.ver != FU_MODEL:
             return byted
@@ -555,7 +571,7 @@ class PMO:
             file.seek(self.header.materialRemapOffset)
             file.write(self.mat_remap_data)
 
-    def update(self):
+    def update(self) -> None:
         self.header.move(0)
 
         self.fix_scales()
@@ -606,7 +622,7 @@ class PMO:
 
         self.header.filesize = self.header.meshDataOffset + offset
 
-    def save(self, fd, second=None):
+    def save(self, fd, second=None) -> None:
         self.update()
 
         self.header.write(fd)
@@ -628,6 +644,7 @@ class PMO:
                 second.seek(mesh.address-self.header.meshDataOffset)
                 second.write(mesh.to_pmo(newfile=True))
         else:
+            mesh: Mesh
             for mesh in self.meshes:
                 fd.seek(mesh.address)
                 fd.write(mesh.to_pmo(newfile=True))

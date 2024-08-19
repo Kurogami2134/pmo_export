@@ -119,7 +119,7 @@ def export(pmo_ver: bytes):
     meshes = []
     print("Creating meshes...")
     for mesh in ready:
-        for (bones, tri) in zip(mesh[1].keys(), mesh[1].values()):  # tri header creation
+        for (bones, tri) in mesh[1].items():  # tri header creation
             tristrip_header = pmodel.TristripHeader()
             tristrip_header.materialOffset = mesh[0]
             if len(meshes):
@@ -127,6 +127,7 @@ def export(pmo_ver: bytes):
                                                         meshes[-1].tri_header.cumulativeWeightCount
             tristrip_header.weightCount = len(bones)
             tristrip_header.bones = list(bones)
+            tristrip_header.backface_culling = obj.data.materials[mesh[0]].use_backface_culling
 
             # mesh creation
             me = pmodel.Mesh()
@@ -144,7 +145,7 @@ def export(pmo_ver: bytes):
                 index.vertices = [x-min_index for x in ind]
                 index.primative_type = 4  # tristrip mode
                 index.index_offset = 0
-                index.face_order = 0
+                index.face_order = 1
                 me.indices.append(index)
 
             me.vertices = []
