@@ -369,6 +369,8 @@ class Mesh(PMODATA):
     @property
     def prims(self) -> bytes:
         prims = b''
+        prims += b'\x01\x00\x00\x21'  # enable alpha blending
+        prims += b'\x07\x05\xFF\xdb'  # set alpha test parameters
         face_order = None
         index: Index
         for index in self.indices:
@@ -382,6 +384,7 @@ class Mesh(PMODATA):
             prim |= len(index.vertices)
 
             prims += struct.pack("I", prim)
+        prims += b'\x00\x00\x00\x21'  # disable alpha blending
         return prims
 
     @property
