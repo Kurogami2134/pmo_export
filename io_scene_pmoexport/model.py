@@ -372,12 +372,12 @@ class Mesh(PMODATA):
         prims += b'\x01\x00\x00\x21'  # enable alpha blending
         prims += b'\x07\x05\xFF\xdb'  # set alpha test parameters
         face_order = None
+        prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
         index: Index
         for index in self.indices:
             if index.face_order != face_order:
                 face_order = index.face_order
                 prims += struct.pack("I", face_order | 0x9B000000)
-                prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
 
             prim = 0x04000000
             prim |= index.primative_type << 16
@@ -385,6 +385,10 @@ class Mesh(PMODATA):
 
             prims += struct.pack("I", prim)
         prims += b'\x00\x00\x00\x21'  # disable alpha blending
+        
+        if self.tri_header.backface_culling:
+            prims += struct.pack("I", 0x1D000000)  # disable backface culling
+        
         return prims
 
     @property
