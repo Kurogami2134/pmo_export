@@ -128,6 +128,7 @@ def export(pmo_ver: bytes):
             tristrip_header.weightCount = len(bones)
             tristrip_header.bones = list(bones)
             tristrip_header.backface_culling = obj.data.materials[mesh[0]].use_backface_culling
+            tristrip_header.alpha_blend = obj.data.materials[mesh[0]].blend_method == 'BLEND'
 
             # mesh creation
             me = pmodel.Mesh()
