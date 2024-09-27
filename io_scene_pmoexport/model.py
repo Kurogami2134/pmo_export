@@ -23,6 +23,9 @@ class PMODATA:
         file.seek(self.address)
         file.write(self.tobytes())
         # file.seek(add)
+    
+    def __str__(self) -> str:
+        return "\n".join([f'{k}: {v}' for k, v in self.__dict__.items()])
 
 
 class PMOHeader(PMODATA):
@@ -97,9 +100,9 @@ class MeshHeader(PMODATA):
 class FUMeshHeader(PMODATA):
     def __init__(self) -> None:
         super().__init__()
-        self.size: int = 0x20
+        self.size: int = 0x18
         self.uvscale: dict[str, float] = {"u": 1.0, "v": 1.0}
-        self.unknown: bytes = bytes(8)  # b'\x03\x00\x00\x80\x00\x00\x00\x00'
+        self.unknown: bytes = b'\x03\x00\x00\x80\x00\x00\x00\x00'
         self.materialCount: int = 0
         self.cumulativeMaterialCount: int = 0
         self.tristripCount: int = 0
@@ -292,12 +295,45 @@ class Index(PMODATA):
 
         return faces
 
+BYTE = 1
+SHORT = 2
+FLOAT = 3
+
+class VertexFormat:
+    def __init__(self, weight_f: int | None = BYTE, uv_f: int | None = SHORT, color_f: int | None = None, normal_f: int | None = BYTE, 
+                 position_f: int | None = SHORT, weight_count: int = 0, bypass_transform: int = 0) -> None:
+        self.weight_f: int | None = weight_f
+        self.uv_f: int | None = uv_f
+        self.color_f: int | None = color_f
+        self.normal_f: int | None = normal_f
+        self.position_f: int | None = position_f
+        self.weight_count: int = weight_count
+        self.bypass_transform: int = bypass_transform
+
+    @property
+    def struct(self) -> str:
+        str_format = ""
+        if self.weight_f is not None:
+            str_format += f'{self.weight_count}{["", "B", "H", "f"][self.weight_f]}'
+        if self.uv_f is not None:
+            str_format += ["", "2B", "2H", "2f"][self.uv_f]
+        if self.color_f is not None:
+            str_format += ["", "", "", "", "", "", "H", "I"][self.color_f]
+        if self.normal_f is not None:
+            str_format += ["", "3b", "3h", "3f"][self.normal_f]
+        if self.bypass_transform:
+            str_format += ["", "2bB", "2hH", "3f"][self.position_f]
+        else:
+            str_format += ["", "3b", "3h", "3f"][self.position_f]
+        
+        return str_format
+
 
 class Mesh(PMODATA):
     def __init__(self) -> None:
         super().__init__()
         self.tri_header: None | TristripHeader = None
-        self.vertex_format: None | str = None
+        self.vertex_format: None | VertexFormat = None
         self.index_format: None | str = None
         self.vertices: None | list[Vertex] = None
         self.indices: None | list[Index] = None
@@ -319,28 +355,19 @@ class Mesh(PMODATA):
 
     @property
     def vtype(self) -> int:
-        verfor = []
-        for x in self.vertex_format:
-            if x.isalpha():
-                verfor.append(x)
-
         command = 0x12000000  # Base vtype command
         command |= self.bypass_transform << 23  # Bypass Transform
 
         command |= max(0, self.tri_header.weightCount - 1 << 14)  # Weight Count
         if self.tri_header.bones:
-            command |= {"B": 1, "H": 2, "f": 3}[verfor.pop(0)] << 9  # Weight Format
+            command |= self.vertex_format.weight_f << 9  # Weight Format
         if self.vertices[0].textrans is not None:
-            command |= {"B": 1, "H": 2, "f": 3}[verfor.pop(0)]  # UV Format
+            command |= self.vertex_format.uv_f  # UV Format
         if self.vertices[0].color_trans is not None:
-            command |= {'H': 6, 'I': 7}[verfor.pop(0)] << 2  # Color Format
+            command |= self.vertex_format.color_f << 2  # Color Format
         if self.vertices[0].nortrans is not None:
-            command |= {"b": 1, "h": 2, "f": 3}[verfor.pop(0)] << 5  # Normal Format
-        verfor = "".join(verfor)
-        if self.bypass_transform:
-            command |= {"bB": 1, "hH": 2, "f": 3}[verfor] << 7  # Position Format
-        else:
-            command |= {"b": 1, "h": 2, "f": 3}[verfor] << 7  # Position Format
+            command |= self.vertex_format.normal_f << 5  # Normal Format
+        command |= self.vertex_format.position_f << 7  # Position Format
 
         command |= {None: 0, 'B': 1, 'H': 2, 'I': 3}[self.index_format] << 11  # Index Format
 
@@ -375,7 +402,7 @@ class Mesh(PMODATA):
             prims += b'\x07\x05\xFF\xdb'  # set alpha test parameters
         
         face_order = None
-        prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
+        #prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
         index: Index
         for index in self.indices:
             if index.face_order != face_order:
@@ -407,7 +434,7 @@ class Mesh(PMODATA):
     def iaddr(self) -> int:
         if self.index_format is None:
             return 0
-        iaddr = self.vaddr + len(self.vertices) * struct.calcsize(self.vertex_format)
+        iaddr = self.vaddr + len(self.vertices) * struct.calcsize(self.vertex_format.struct)
         if iaddr % 8:
             iaddr += iaddr % 8
         return iaddr
@@ -543,7 +570,7 @@ class PMO:
 
     @property
     def bone_data(self) -> bytes:
-        # TODO: Updata change bone data for fu models, tho it shouldn't be a problem
+        # TODO: Update bone data for fu models, tho it shouldn't be a problem
         data = b''
         tri: TristripHeader
         for tri in self.tristrips:
@@ -604,6 +631,8 @@ class PMO:
             total_tri_count += mheader.tristripCount
 
         self.header.tristripHeaderOffset = self.header.meshHeaderOffset + self.mesh_header[0].size*len(self.mesh_header)
+        if self.header.tristripHeaderOffset % 16:
+            self.header.tristripHeaderOffset += 16 - self.header.tristripHeaderOffset % 16
         for tri_header in range(len(self.tristrips)):
             self.tristrips[tri_header].move(self.header.tristripHeaderOffset + self.tristrips[0].size*tri_header)
 
@@ -642,8 +671,8 @@ class PMO:
         fd.seek(self.header.boneDataOffset)
         fd.write(self.bone_data)
         # Write mesh headers
-        for mesh in self.mesh_header:
-            mesh.write(fd)
+        for mesh_he in self.mesh_header:
+            mesh_he.write(fd)
         # Write tristrip headers
         tristrip: TristripHeader
         for tristrip in self.tristrips:

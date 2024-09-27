@@ -21,9 +21,8 @@ def uvs(vertex_index, me):
     return uv
 
 
-def fix_uvs():
+def fix_uvs(obj):
     bpy.ops.object.mode_set(mode='OBJECT')
-    obj = bpy.context.active_object
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_mode(type="VERT")
     bpy.ops.mesh.select_all(action='DESELECT')
@@ -38,7 +37,9 @@ def fix_uvs():
     for a in bpy.context.screen.areas:
         if a.type == 'VIEW_3D':
             break
-
+    else:
+        exit()
+        
     with bpy.context.temp_override(area=a, space_data=a.spaces.active, region=a.regions[-1]):
         while max([len(uvs(x, me)) for x in range(len(me.vertices))]) > 1:
             for x in range(len(me.vertices)):

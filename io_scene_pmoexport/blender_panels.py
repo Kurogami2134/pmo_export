@@ -60,7 +60,7 @@ class PreparePmo(bpy.types.Operator):
         return context.active_object is not None
 
     def execute(self, context):
-        fix_uvs.fix_uvs()
+        fix_uvs.fix_uvs(context.active_object)
         return {'FINISHED'}
 
 
