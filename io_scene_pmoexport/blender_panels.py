@@ -1,11 +1,11 @@
 import bpy
 from io_scene_pmoexport import fix_uvs
 
-bpy.types.Material.rgba = bpy.props.FloatVectorProperty(size=4, default=(1.0, 1.0, 1.0, 1.0), min=0, max=1,
-                                                        subtype='COLOR')
-bpy.types.Material.shadow_rgba = bpy.props.FloatVectorProperty(size=4, default=(0.5, 0.5, 0.5, 1.0), min=0, max=1,
-                                                               subtype='COLOR')
-bpy.types.Material.texture_index = bpy.props.IntProperty(name="Texture Index", min=0)
+bpy.types.Material.pmo_diffuse = bpy.props.FloatVectorProperty(size=4, default=(1.0, 1.0, 1.0, 1.0), min=0, max=1,
+                                                        subtype='COLOR', name='Diffuse')
+bpy.types.Material.pmo_ambient = bpy.props.FloatVectorProperty(size=4, default=(0.5, 0.5, 0.5, 1.0), min=0, max=1,
+                                                               subtype='COLOR', name='Ambient')
+bpy.types.Material.pmo_texture_index = bpy.props.IntProperty(name='Texture Index', min=0)
 
 
 class PMOMaterialPanel(bpy.types.Panel):
@@ -26,12 +26,12 @@ class PMOMaterialPanel(bpy.types.Panel):
         split = layout.split()
 
         col = split.column()
-        col.prop(material, "rgba")
+        col.prop(material, "pmo_diffuse")
         col = split.column()
-        col.prop(material, "shadow_rgba")
+        col.prop(material, "pmo_ambient")
 
         row = layout.row()
-        row.prop(material, "texture_index")
+        row.prop(material, "pmo_texture_index")
 
 
 class PreparePmoPanel(bpy.types.Panel):

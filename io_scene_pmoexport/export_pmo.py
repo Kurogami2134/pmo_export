@@ -54,7 +54,7 @@ def sort_vertices(obj):
         groups = {}
         for v in vs:
             for g in [g.group for g in me.vertices[v].groups]:
-                groups[g] = groups[g] + [v] if g in groups.keys() else [v]
+                groups[g] = groups[g] + [v] if g in groups else [v]
         verts.append(groups)
 
     ind = 0
@@ -72,19 +72,19 @@ def sort_vertices(obj):
 def pmo_material(material):
     pmaterial = pmodel.Material()
 
-    pmaterial.rgba = {
-        "r": material.rgba[0] * 255,
-        "g": material.rgba[1] * 255,
-        "b": material.rgba[2] * 255,
-        "a": material.rgba[3] * 255
+    pmaterial.diffuse = {
+        "r": material.pmo_diffuse[0] * 255,
+        "g": material.pmo_diffuse[1] * 255,
+        "b": material.pmo_diffuse[2] * 255,
+        "a": material.pmo_diffuse[3] * 255
     }
-    pmaterial.rgba2 = {
-        "r": material.shadow_rgba[0] * 255,
-        "g": material.shadow_rgba[1] * 255,
-        "b": material.shadow_rgba[2] * 255,
-        "a": material.shadow_rgba[3] * 255
+    pmaterial.ambient = {
+        "r": material.pmo_ambient[0] * 255,
+        "g": material.pmo_ambient[1] * 255,
+        "b": material.pmo_ambient[2] * 255,
+        "a": material.pmo_ambient[3] * 255
     }
-    pmaterial.textureIndex = material.texture_index
+    pmaterial.textureIndex = material.pmo_texture_index
 
     return pmaterial
 
@@ -169,15 +169,14 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
                 for x in [[x.group for x in obj.data.vertices[v].groups] for v in tri]:
                     for bone in x:
                         bones.add((int(bpy.context.active_object.vertex_groups[bone].name.split(".")[-1]), obj.vertex_groups[bone].index))
-                        #bones.add(obj.vertex_groups[bone].index)
                 bones = tuple(bones)
-                tris[bones] = tris[bones] + [tri] if bones in tris.keys() else [tri]
+                tris[bones] = tris[bones] + [tri] if bones in tris else [tri]
             ready.append((material, tris))
 
         uvs = {}
         for face in obj.data.polygons:
             for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
-                if vert_idx not in uvs.keys():
+                if vert_idx not in uvs:
                     uvs[vert_idx] = [*obj.data.uv_layers.active.data[loop_idx].uv]
         
         obj.data.calc_tangents()
@@ -185,7 +184,7 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
         normals = {}
         warn_multiple_normal = False
         for l in obj.data.loops:
-            if l.vertex_index not in normals.keys():
+            if l.vertex_index not in normals:
                 normals[l.vertex_index] = l.normal
             else:
                 warn_multiple_normal = True

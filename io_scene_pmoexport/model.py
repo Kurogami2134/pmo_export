@@ -145,7 +145,6 @@ class TristripHeader(PMODATA):
         data = b''
         for bone in range(len(self.bones)):
             data += struct.pack("2b", bone, self.bones[bone])
-            print(bone, self.bones[bone])
 
         return data
 
@@ -163,16 +162,16 @@ class Material(PMODATA):
     def __init__(self) -> None:
         super().__init__()
         self.size: int = 0x10
-        self.rgba: dict[str, int] = {"r": 0, "g": 0, "b": 0, "a": 0}
-        self.rgba2: dict[str, int] = {"r": 0, "g": 0, "b": 0, "a": 0}
+        self.diffuse: dict[str, int] = {"r": 0, "g": 0, "b": 0, "a": 0}
+        self.ambient: dict[str, int] = {"r": 0, "g": 0, "b": 0, "a": 0}
         self.textureIndex: int = 0
         self.unknown: bytes = b'\x00\x00\x00\x00'
 
     def tobytes(self) -> bytes:
         byted = b''
-        for x in self.rgba.values():
+        for x in self.diffuse.values():
             byted += struct.pack("B", int(x))
-        for x in self.rgba2.values():
+        for x in self.ambient.values():
             byted += struct.pack("B", int(x))
         byted += struct.pack("i", self.textureIndex)
         byted += self.unknown
@@ -400,7 +399,7 @@ class Mesh(PMODATA):
             prims += b'\x07\x05\xFF\xdb'  # set alpha test parameters
         
         face_order = None
-        #prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
+        prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
         index: Index
         for index in self.indices:
             if index.face_order != face_order:
@@ -667,7 +666,6 @@ class PMO:
         self.header.write(fd)
         # Write bone data
         fd.seek(self.header.boneDataOffset)
-        print(self.bone_data)
         fd.write(self.bone_data)
         # Write mesh headers
         for mesh_he in self.mesh_header:
