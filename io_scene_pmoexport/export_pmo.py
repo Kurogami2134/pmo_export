@@ -11,6 +11,23 @@ except:
     from pyffi.utils import trianglestripifier
 
 
+def fix_vg(obj):
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_mode(type="VERT")
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    ui_weight = bpy.context.scene.tool_settings.vertex_group_weight
+    for vg in obj.vertex_groups:
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.vertex_group_set_active(group=vg.name)
+        bpy.ops.object.vertex_group_select()
+        bpy.ops.mesh.select_linked()
+        bpy.ops.object.vertex_group_deselect()
+        bpy.context.scene.tool_settings.vertex_group_weight = 0
+        bpy.ops.object.vertex_group_assign()
+    bpy.context.scene.tool_settings.vertex_group_weight = ui_weight
+
+
 def sort_vertices(obj):
     print("Sorting vertices...")
     bpy.ops.object.mode_set(mode='EDIT')
@@ -94,12 +111,15 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
         warning("No valid meshes found")
         return -1
 
+    cumulativeWeightCount = 0
+    
     for base_obj in objs:
         obj = base_obj.copy()
         obj.data = base_obj.data.copy()
         obj.hide_set(False)
         bpy.context.collection.objects.link(obj)
         
+        fix_vg(obj)
         if prepare_pmo:
             fix_uvs(obj)
 
@@ -141,7 +161,8 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
                 bones = set()
                 for x in [[x.group for x in obj.data.vertices[v].groups] for v in tri]:
                     for bone in x:
-                        bones.add(obj.vertex_groups[bone].index)
+                        bones.add((int(bpy.context.active_object.vertex_groups[bone].name.split(".")[-1]), obj.vertex_groups[bone].index))
+                        #bones.add(obj.vertex_groups[bone].index)
                 bones = tuple(bones)
                 tris[bones] = tris[bones] + [tri] if bones in tris.keys() else [tri]
             ready.append((material, tris))
@@ -172,11 +193,10 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
             for (bones, tri) in mesh[1].items():  # tri header creation
                 tristrip_header = pmodel.TristripHeader()
                 tristrip_header.materialOffset = mesh[0]
-                if len(meshes):
-                    tristrip_header.cumulativeWeightCount = meshes[-1].tri_header.weightCount + \
-                                                            meshes[-1].tri_header.cumulativeWeightCount
+                tristrip_header.cumulativeWeightCount = cumulativeWeightCount
                 tristrip_header.weightCount = len(bones)
-                tristrip_header.bones = list(bones)
+                cumulativeWeightCount += tristrip_header.weightCount
+                tristrip_header.bones = [id for id, index in bones]
                 tristrip_header.backface_culling = obj.data.materials[mesh[0]].use_backface_culling
                 tristrip_header.alpha_blend = obj.data.materials[mesh[0]].blend_method == 'BLEND'
 
@@ -228,7 +248,8 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
                     vertex.vn(*normals[vert.index])
                     
                     vertex.w = []
-                    for bone in bones:
+                    for bone in [index for id, index in bones]:
+                        print(type(bone))
                         if bone in [vg.group for vg in vert.groups]:
                             weight = [vg.weight for vg in vert.groups if vg.group == bone][0]
                             vertex.w.append(weight)

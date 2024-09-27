@@ -145,6 +145,7 @@ class TristripHeader(PMODATA):
         data = b''
         for bone in range(len(self.bones)):
             data += struct.pack("2b", bone, self.bones[bone])
+            print(bone, self.bones[bone])
 
         return data
 
@@ -249,9 +250,6 @@ class Vertex(PMODATA):
         file.write(self.to_pmo())
 
     def set_scale(self, newscale: dict) -> None:
-        self.x = self.x / self.scale["x"] * newscale["x"]
-        self.y = self.y / self.scale["y"] * newscale["y"]
-        self.z = self.z / self.scale["z"] * newscale["z"]
         self.scale = newscale
 
 
@@ -669,6 +667,7 @@ class PMO:
         self.header.write(fd)
         # Write bone data
         fd.seek(self.header.boneDataOffset)
+        print(self.bone_data)
         fd.write(self.bone_data)
         # Write mesh headers
         for mesh_he in self.mesh_header:
