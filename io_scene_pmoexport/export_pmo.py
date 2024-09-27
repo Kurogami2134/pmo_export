@@ -14,10 +14,10 @@ except:
 def fix_vg(obj):
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_mode(type="VERT")
-    bpy.ops.mesh.select_all(action='SELECT')
 
-    ui_weight = bpy.context.scene.tool_settings.vertex_group_weight
-    for vg in obj.vertex_groups:
+    groups = sorted(obj.vertex_groups, key=lambda x:x.name)
+
+    for idx, vg in enumerate(groups):
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.vertex_group_set_active(group=vg.name)
         bpy.ops.object.vertex_group_select()
@@ -25,7 +25,12 @@ def fix_vg(obj):
         bpy.ops.object.vertex_group_deselect()
         bpy.context.scene.tool_settings.vertex_group_weight = 0
         bpy.ops.object.vertex_group_assign()
-    bpy.context.scene.tool_settings.vertex_group_weight = ui_weight
+        bpy.context.scene.tool_settings.vertex_group_weight = 1
+        
+        while vg.index > idx:
+            bpy.ops.object.vertex_group_move(direction='UP')
+
+    bpy.ops.object.mode_set(mode='OBJECT')
 
 
 def sort_vertices(obj):
@@ -118,12 +123,14 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
         obj.data = base_obj.data.copy()
         obj.hide_set(False)
         bpy.context.collection.objects.link(obj)
-        
-        fix_vg(obj)
-        if prepare_pmo:
-            fix_uvs(obj)
 
         bpy.context.view_layer.objects.active = obj
+
+        if prepare_pmo:
+            fix_uvs(obj)
+        
+        fix_vg(obj)
+
         sort_vertices(obj)
 
         mesh_header = pmodel.MeshHeader() if pmo_ver == pmodel.P3RD_MODEL else pmodel.FUMeshHeader()
