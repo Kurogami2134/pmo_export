@@ -18,6 +18,6 @@ Monster models for MHP3rd are not working.
 To [Seth VanHeulen](https://gitlab.com/svanheulen/)'s [(mhfz)](https://gitlab.com/svanheulen/mhff) and [*&](https://github.com/AsteriskAmpersand)'s [(PMO Importer)](https://github.com/AsteriskAmpersand/PMO-Importer) for their research and documentation on the format. To [codestation](https://github.com/codestation) for [mhtools](https://github.com/codestation/mhtools).
 And CAPCOM, for making the games.
 
-Thanks again to [*&](https://github.com/AsteriskAmpersand) for their help fixing normals.
+Thanks again to [*&](https://github.com/AsteriskAmpersand) for their help fixing normals, uvs and edges (and a lot of blender stuff).
 
 Special thanks to [IncognitoMan](https://github.com/IncognitoMan) for giving some inspiration for this, without him asking about it, probably MHFU support wouldn't be a thing.

@@ -57,7 +57,7 @@ class ExportPmo(Operator, ExportHelper):
 
     prep_pmo: BoolProperty(
         name="Prepare PMO",
-        description="Fix UVs for pmo before exporting. (Same as pressing 'Prepare PMO' but won't have a permanent effect on the model)",
+        description="Triangulate mesh and split vertex for normals/uvs. (Same as pressing 'Prepare PMO' but won't have a permanent effect on the model)",
         default=False
     )
 

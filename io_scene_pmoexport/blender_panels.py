@@ -1,5 +1,5 @@
 import bpy
-from io_scene_pmoexport import fix_uvs
+from io_scene_pmoexport.prep_pmo import prep_pmo
 
 bpy.types.Material.pmo_diffuse = bpy.props.FloatVectorProperty(size=4, default=(1.0, 1.0, 1.0, 1.0), min=0, max=1,
                                                         subtype='COLOR', name='Diffuse')
@@ -51,7 +51,7 @@ class PreparePmoPanel(bpy.types.Panel):
 
 
 class PreparePmo(bpy.types.Operator):
-    """Prepare uvs/vertex groups for pmo export."""
+    """Triangulate mesh and split vertex for normals/uvs."""
     bl_idname = "object.prepare_pmo"
     bl_label = "Run"
 
@@ -60,7 +60,7 @@ class PreparePmo(bpy.types.Operator):
         return context.active_object is not None
 
     def execute(self, context):
-        fix_uvs.fix_uvs(context.active_object)
+        prep_pmo(context.active_object)
         return {'FINISHED'}
 
 

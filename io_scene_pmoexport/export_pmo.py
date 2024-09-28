@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 from io_scene_pmoexport import model as pmodel
-from io_scene_pmoexport.fix_uvs import fix_uvs
+from io_scene_pmoexport.prep_pmo import prep_pmo
 
 try:
     from pyffi.utils import trianglestripifier
@@ -21,7 +21,7 @@ def fix_vg(obj):
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.vertex_group_set_active(group=vg.name)
         bpy.ops.object.vertex_group_select()
-        bpy.ops.mesh.select_linked()
+        bpy.ops.mesh.select_linked(delimit={'MATERIAL'})
         bpy.ops.object.vertex_group_deselect()
         bpy.context.scene.tool_settings.vertex_group_weight = 0
         bpy.ops.object.vertex_group_assign()
@@ -126,10 +126,10 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
 
         bpy.context.view_layer.objects.active = obj
 
-        if prepare_pmo:
-            fix_uvs(obj)
-        
         fix_vg(obj)
+
+        if prepare_pmo:
+            prep_pmo(obj)
 
         sort_vertices(obj)
 
@@ -152,15 +152,20 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
             mesh_header.uvscale = {"u": 1, "v": 1}
 
         print("Constructing materials...")
-        mats = []
-        for mat in obj.data.materials:
-            mats.append([list(face.vertices) for face in obj.data.polygons if face.material_index == len(mats)])
-            mesh_header.materials.append(pmo_material(mat))
+        # *&'s code for mats and pmo attributes
+        mesh_header.materials = list(map(pmo_material, obj.data.materials))
+        metalayers = list(filter(lambda x: "PMO " in x.name,obj.data.attributes))
+        facetuples = list(zip(map(lambda x: x.material_index, obj.data.polygons),
+                            *map(lambda x: map(lambda y: y.value, x.data), metalayers)))
+        metamats = {tp:[] for tp in sorted(list(set(facetuples)))}
+        labels = list(map(lambda x: x.name.replace("PMO ",""), metalayers))
+        for ix,face in enumerate(obj.data.polygons):
+            metamats[facetuples[ix]].append(list(face.vertices))
 
         ready = []
-        for material in range(len(mats)):
+        for props, face_collection in metamats.items():
             tris = {}
-            me = trianglestripifier.Mesh(faces=mats[material])
+            me = trianglestripifier.Mesh(faces=face_collection)
             tristripifier = trianglestripifier.TriangleStripifier(me)
             tristrips = tristripifier.find_all_strips()  # indices
 
@@ -170,8 +175,8 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
                     for bone in x:
                         bones.add((int(bpy.context.active_object.vertex_groups[bone].name.split(".")[-1]), obj.vertex_groups[bone].index))
                 bones = tuple(bones)
-                tris[bones] = tris[bones] + [tri] if bones in tris else [tri]
-            ready.append((material, tris))
+                tris[bones] = tris[bones] + [tri] if bones in tris.keys() else [tri]
+            ready.append(({k: v for k, v in zip(["material"] + labels, props)}, tris))
 
         uvs = {}
         for face in obj.data.polygons:
@@ -187,24 +192,32 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
             if l.vertex_index not in normals:
                 normals[l.vertex_index] = l.normal
             else:
-                warn_multiple_normal = True
+                warn_multiple_normal = warn_multiple_normal or (normals[l.vertex_index] != l.normal)
         
         if warn_multiple_normal:
-            warning("Because of some vertex having multiple normals, exported normals may not look as in the editor.")
+            warning("Because of some vertex having multiple normals, exported normals may not look as they do in the editor.")
 
         meshes = []
         print("Creating meshes...")
         for mesh in ready:
             print("Creating mesh...")
-            for (bones, tri) in mesh[1].items():  # tri header creation
+            props = mesh[0]
+            for (bones, tri) in mesh[1].items():  # tri header/submesh creation
                 tristrip_header = pmodel.TristripHeader()
-                tristrip_header.materialOffset = mesh[0]
+                tristrip_header.materialOffset = props["material"]
                 tristrip_header.cumulativeWeightCount = cumulativeWeightCount
                 tristrip_header.weightCount = len(bones)
                 cumulativeWeightCount += tristrip_header.weightCount
                 tristrip_header.bones = [id for id, index in bones]
-                tristrip_header.backface_culling = obj.data.materials[mesh[0]].use_backface_culling
-                tristrip_header.alpha_blend = obj.data.materials[mesh[0]].blend_method == 'BLEND'
+                
+                if "Backface Culling" in props:
+                    tristrip_header.backface_culling = props["BCE"] > 0
+                else:
+                    tristrip_header.backface_culling = obj.data.materials[mesh[0]["material"]].use_backface_culling
+                if "Alpha Test Enable" in props:
+                    tristrip_header.alpha_blend = props["ATE"] > 0
+                else:
+                    tristrip_header.alpha_blend = obj.data.materials[mesh[0]["material"]].blend_method == 'BLEND'
 
                 # mesh creation
                 me = pmodel.Mesh()
@@ -219,24 +232,24 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
 
                 me.base_offset = 0
 
-                min_index = min(3000, *[min(x) for x in tri])
-                max_index = max(0, *[max(x) for x in tri]) - min_index
+                verts = []
+                for x in tri:
+                    verts.extend(x)
+                vert_remap = {v: k for k, v in enumerate(sorted(set(verts)))}
+
+                max_index = max(0, *[max(x) for x in tri])
                 me.index_format = "B" if max_index <= 255 else "H" if max_index <= 0xFFFF else "I"
                 me.indices = []
                 
                 for ind in tri:
                     index = pmodel.Index(me.index_format)
-                    index.vertices = [x-min_index for x in ind]
+                    index.vertices = [vert_remap[v] for v in ind]
                     index.primative_type = 4  # tristrip mode
                     index.index_offset = 0
                     index.face_order = 0
                     me.indices.append(index)
 
                 me.vertices = []
-
-                verts = []
-                for x in tri:
-                    verts.extend(x)
 
                 print("Adding vertices...")
                 for v_idx in sorted(set(verts)):
@@ -255,7 +268,6 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
                     
                     vertex.w = []
                     for bone in [index for id, index in bones]:
-                        print(type(bone))
                         if bone in [vg.group for vg in vert.groups]:
                             weight = [vg.weight for vg in vert.groups if vg.group == bone][0]
                             vertex.w.append(weight)
