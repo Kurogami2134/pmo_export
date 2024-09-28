@@ -6,8 +6,10 @@ from io_scene_pmoexport.prep_pmo import prep_pmo
 try:
     from pyffi.utils import trianglestripifier
 except:
-    from subprocess import check_call
-    check_call([bpy.app.binary_path_python, '-m', 'pip', 'install', 'pyffi'])
+    from subprocess import check_output
+    import sys
+
+    check_output([sys.executable, '-m', 'pip', 'install', 'pyffi', f'--target={bpy.utils.user_resource("SCRIPTS", path="modules")}'])
     from pyffi.utils import trianglestripifier
 
 
