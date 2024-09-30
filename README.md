@@ -2,7 +2,7 @@
 
 ## Overview
 
-Blender 3.6 addon to export models for the games Monster Hunter Freedom
+Blender addon to export models for the games Monster Hunter Freedom
 Unite and Monster Hunter Portable 3rd for the Sony PSP console.
 
 ## Usage
