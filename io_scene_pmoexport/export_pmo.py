@@ -90,9 +90,10 @@ def pmo_material(material):
 
     return pmaterial
 
-def warning(message: str = "", title: str = "Warning"):
+def warning(messages: str = "", title: str = "Warning"):
     def draw(self, context):
-        self.layout.label(text=message)
+        for message in messages:
+            self.layout.label(text=message)
     bpy.context.window_manager.popup_menu(draw, title=title, icon="ERROR")
 
 def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel.PMO | int:
@@ -100,6 +101,7 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
 
     pmo = pmodel.PMO()
     pmo.header.ver = pmo_ver
+    warnings = []
 
     match target:
         case "scene":  # scene
@@ -115,7 +117,7 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
             objs = [bpy.context.active_object]
 
     if len(objs) == 0:
-        warning("No valid meshes found")
+        warning(["No valid meshes found"])
         return -1
 
     cumulativeWeightCount = 0
@@ -127,6 +129,9 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
         bpy.context.collection.objects.link(obj)
 
         bpy.context.view_layer.objects.active = obj
+
+        if len([v for v in obj.data.vertices if len(v.groups) == 0]):
+            warnings.append(f'Object "{base_obj.name}" has vertices that are not tied to any vertex group and those will not be exported.')
 
         fix_vg(obj)
 
@@ -197,7 +202,7 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
                 warn_multiple_normal = warn_multiple_normal or (normals[l.vertex_index] != l.normal)
         
         if warn_multiple_normal:
-            warning("Because of some vertex having multiple normals, exported normals may not look as they do in the editor.")
+            warnings.append(f'Because of some vertex having multiple normals, exported normals may not look as they do in the editor for "{base_obj.name}".')
 
         meshes = []
         print("Creating meshes...")
@@ -213,11 +218,11 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
                 tristrip_header.bones = [id for id, index in bones]
                 
                 if "Backface Culling" in props:
-                    tristrip_header.backface_culling = props["BCE"] > 0
+                    tristrip_header.backface_culling = props["Backface Culling"] > 0
                 else:
                     tristrip_header.backface_culling = obj.data.materials[mesh[0]["material"]].use_backface_culling
                 if "Alpha Test Enable" in props:
-                    tristrip_header.alpha_blend = props["ATE"] > 0
+                    tristrip_header.alpha_blend = props["Alpha Test Enable"] > 0
                 else:
                     tristrip_header.alpha_blend = obj.data.materials[mesh[0]["material"]].blend_method == 'BLEND'
 
@@ -287,4 +292,8 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
         bpy.data.objects.remove(obj, do_unlink=True)
 
     print("Export finished!\n\n")
+
+    if warnings:
+        warning(warnings)
+
     return pmo
