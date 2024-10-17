@@ -96,7 +96,7 @@ def warning(messages: str = "", title: str = "Warning"):
             self.layout.label(text=message)
     bpy.context.window_manager.popup_menu(draw, title=title, icon="ERROR")
 
-def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel.PMO | int:
+def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False) -> pmodel.PMO | int:
     print("Exporting PMO...")
 
     pmo = pmodel.PMO()
@@ -129,6 +129,9 @@ def export(pmo_ver: bytes, target: int = 0, prepare_pmo: bool = False) -> pmodel
         bpy.context.collection.objects.link(obj)
 
         bpy.context.view_layer.objects.active = obj
+
+        if cleanup_vg:
+            bpy.ops.object.vertex_group_clean(group_select_mode="ALL")
 
         if len([v for v in obj.data.vertices if len(v.groups) == 0]):
             warnings.append(f'Object "{base_obj.name}" has vertices that are not tied to any vertex group and those will not be exported.')

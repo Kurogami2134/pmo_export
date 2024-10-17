@@ -33,7 +33,7 @@ class PMOHeader(PMODATA):
         super().__init__()
         self.size: int = 0x40
         self.pmo: bytes = b'pmo\x00'
-        self.ver: bytes = b'102\x00'
+        self.ver: bytes = P3RD_MODEL
         self.filesize: int = 0
         self.clippingDistance: float = 0
         self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
@@ -73,8 +73,10 @@ class MeshHeader(PMODATA):
         super().__init__()
         self.size: int = 0x30
         self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
-        self.unknown: bytes = (b'\x00\x00\x00\x00\x00\x00\x80?\x00\x00\x80?\x00\x00\x00\x00\x00\x00\x00\x00\x03'
-                               b'\x00\x00\x802\x00\x00\xdf')
+        self.w_scale: float = 0.0
+        self.uv_scale: dict[str, float] = {"u": 1.0, "v": 1.0}
+        self.unknown: bytes = (b'\x00\x00\x00\x00\x00\x00\x00\x00'  # padding?
+                               b'\x03\x00\x00\x80\x32\x00\x00\xdf')  # gpu opcodes?
         self.materialCount: int = 0
         self.cumulativeMaterialCount: int = 0
         self.tristripCount: int = 0
@@ -87,11 +89,13 @@ class MeshHeader(PMODATA):
         self.materialCount = len(self.materials)
         self.tristripCount = len(self.meshes)
 
-    def set_scale(self, scale) -> None:
+    def set_scale(self, scale: dict[str, float], w_scale: float = 0.0) -> None:
         self.scale = scale
+        self.w_scale = w_scale
 
     def tobytes(self) -> bytes:
-        byted = struct.pack("3f", *self.scale.values()) + self.unknown
+        byted = struct.pack("3f", *self.scale.values()) + struct.pack("f", self.w_scale)
+        byted += struct.pack("2f", *self.uv_scale.values()) + self.unknown
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
         return byted
@@ -102,7 +106,7 @@ class FUMeshHeader(PMODATA):
         super().__init__()
         self.size: int = 0x18
         self.uvscale: dict[str, float] = {"u": 1.0, "v": 1.0}
-        self.unknown: bytes = b'\x03\x00\x00\x80\x00\x00\x00\x00'
+        self.unknown: bytes = b'\x03\x00\x00\x80\x00\x00\x00\x00'  # gpu opcodes?
         self.materialCount: int = 0
         self.cumulativeMaterialCount: int = 0
         self.tristripCount: int = 0
@@ -143,8 +147,8 @@ class TristripHeader(PMODATA):
     @property
     def bone_data(self) -> bytes:
         data = b''
-        for bone in range(len(self.bones)):
-            data += struct.pack("2b", bone, self.bones[bone])
+        for index, bone in enumerate(self.bones):
+            data += struct.pack("2b", index, bone)
 
         return data
 
@@ -437,8 +441,8 @@ class Mesh(PMODATA):
         return iaddr
 
     def to_pmo(self, newfile=False) -> bytes:
-        start = (b'\x00\x00\x00\x14'
-                 b'\x00\x00\x00\x10')
+        start = (b'\x00\x00\x00\x14'  # set origin
+                 b'\x00\x00\x00\x10')  # set base_address
 
         vtype = struct.pack("I", self.vtype)
 
@@ -453,7 +457,8 @@ class Mesh(PMODATA):
         addresses = ((struct.pack("I", iaddr | 0x02000000) if self.index_format is not None else b'') +
                      struct.pack("I", vaddr | 0x01000000))
 
-        byted = start + addresses + vtype + self.prims + b'\x00\x00\x00\x13\x00\x00\x00\x0B'
+        byted = start + addresses + vtype + self.prims + (b'\x00\x00\x00\x13'  # set offset
+                                                          b'\x00\x00\x00\x0B')  # return
 
         if newfile:
             if len(byted) < vaddr:
@@ -514,11 +519,8 @@ class PMO:
             return byted
         for x in self.mat_remaps:
             byted += struct.pack("b", x)  # [0]
-        if len(byted) < 0x10:
-            byted += bytes(0x10 - len(byted))
-            return byted
         if len(byted) % 0x10:
-            byted += bytes(len(byted) % 0x10)
+            byted += bytes(0x10 - len(byted) % 0x10)
         return byted
 
     @property
@@ -572,10 +574,8 @@ class PMO:
         tri: TristripHeader
         for tri in self.tristrips:
             data += tri.bone_data
-        if len(data) < 0x10:
-            data += bytes(0x10 - len(data))
-        if len(data) % 8:  # Might be 16
-            data += bytes(len(data) % 8)
+        if len(data) % 0x10:
+            data += bytes(0x10 - len(data) % 0x10)
 
         return data
 

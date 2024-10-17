@@ -9,9 +9,9 @@ from io_scene_pmoexport import export_pmo
 FU_MODEL = b'1.0\x00'
 P3RD_MODEL = b'102\x00'
 
-def export(context, filepath: str, version: str, target: 0, prepare_pmo: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False):
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
-    pmo = export_pmo.export(ver, target, prepare_pmo)
+    pmo = export_pmo.export(ver, target, prepare_pmo, cleanup_vg)
     if not isinstance(pmo, int):
         f = open(filepath, 'wb')
         pmo.save(f)
@@ -61,8 +61,14 @@ class ExportPmo(Operator, ExportHelper):
         default=False
     )
 
+    cleanup_vg: BoolProperty(
+        name="Clean Up VG",
+        description="Remove vertex group assignments wich are not required",
+        default=False
+    )
+
     def execute(self, context):
-        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo)
+        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg)
 
 
 def menu_func_export(self, context):
