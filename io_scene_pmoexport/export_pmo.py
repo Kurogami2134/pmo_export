@@ -164,14 +164,13 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
             mesh_header.uvscale = {"u": 1, "v": 1}
 
         print("Constructing materials...")
-        # *&'s code for mats and pmo attributes
         mesh_header.materials = []
         for mat in obj.data.materials:
             if mat.name not in materials:
-                mat_id = int(mat.name.split("_")[1])  # len(materials)
+                mat_id = int(mat.name.split("_")[-1]) if "_" in mat.name else len(materials)
                 materials[mat.name] = mat_id
                 pmo_mats.append((mat_id, pmo_material(mat)))
-        #mesh_header.materials = list(map(pmo_material, obj.data.materials))
+        # *&'s code for mats and pmo attributes    
         metalayers = list(filter(lambda x: "PMO " in x.name,obj.data.attributes))
         facetuples = list(zip(map(lambda x: materials[obj.data.materials[x.material_index].name], obj.data.polygons),
                             *map(lambda x: map(lambda y: y.value, x.data), metalayers)))

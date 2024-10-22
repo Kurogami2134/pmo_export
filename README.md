@@ -20,4 +20,6 @@ And CAPCOM, for making the games.
 
 Thanks again to [*&](https://github.com/AsteriskAmpersand) for their help fixing normals, uvs and edges (and a lot of blender stuff).
 
+Thanks to [Xenthos](https://github.com/Xenthalos) for the new pmo preparing script.
+
 Special thanks to [IncognitoMan](https://github.com/IncognitoMan) for giving some inspiration for this, without him asking about it, probably MHFU support wouldn't be a thing.
