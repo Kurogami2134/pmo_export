@@ -2,19 +2,18 @@ import bpy
 import bmesh
 
 
-def triangulate(mesh):
-    bpy.ops.object.mode_set(mode='EDIT')
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-
-    bmesh.ops.triangulate(bm, faces=bm.faces)
-
-    bpy.ops.object.mode_set(mode='OBJECT')
-    bm.to_mesh(mesh)
-    bm.free()
-
-
 def prep_pmo(obj):
+    def triangulate(mesh):
+        bpy.ops.object.mode_set(mode='EDIT')
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+
+        bmesh.ops.triangulate(bm, faces=bm.faces)
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bm.to_mesh(mesh)
+        bm.free()
+
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_mode(type="VERT")
@@ -24,14 +23,6 @@ def prep_pmo(obj):
     me = obj.data
 
     triangulate(me)
-
-    a = None
-
-    for a in bpy.context.screen.areas:
-        if a.type == 'VIEW_3D':
-            break
-    else:
-        return
     
     # *&'s code to handle edges and repeated vertices
     

@@ -121,6 +121,8 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
         return -1
 
     cumulativeWeightCount = 0
+    materials: dict[str, int] = {}
+    pmo_mats: list[pmodel.Material] = []
     
     for base_obj in objs:
         obj = base_obj.copy()
@@ -163,9 +165,15 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
 
         print("Constructing materials...")
         # *&'s code for mats and pmo attributes
-        mesh_header.materials = list(map(pmo_material, obj.data.materials))
+        mesh_header.materials = []
+        for mat in obj.data.materials:
+            if mat.name not in materials:
+                mat_id = int(mat.name.split("_")[1])  # len(materials)
+                materials[mat.name] = mat_id
+                pmo_mats.append((mat_id, pmo_material(mat)))
+        #mesh_header.materials = list(map(pmo_material, obj.data.materials))
         metalayers = list(filter(lambda x: "PMO " in x.name,obj.data.attributes))
-        facetuples = list(zip(map(lambda x: x.material_index, obj.data.polygons),
+        facetuples = list(zip(map(lambda x: materials[obj.data.materials[x.material_index].name], obj.data.polygons),
                             *map(lambda x: map(lambda y: y.value, x.data), metalayers)))
         metamats = {tp:[] for tp in sorted(list(set(facetuples)))}
         labels = list(map(lambda x: x.name.replace("PMO ",""), metalayers))
@@ -215,6 +223,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
             for (bones, tri) in mesh[1].items():  # tri header/submesh creation
                 tristrip_header = pmodel.TristripHeader()
                 tristrip_header.materialOffset = props["material"]
+                print(tristrip_header.materialOffset, [id for id, index in bones])
                 tristrip_header.cumulativeWeightCount = cumulativeWeightCount
                 tristrip_header.weightCount = len(bones)
                 cumulativeWeightCount += tristrip_header.weightCount
@@ -223,11 +232,11 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
                 if "Backface Culling" in props:
                     tristrip_header.backface_culling = props["Backface Culling"] > 0
                 else:
-                    tristrip_header.backface_culling = obj.data.materials[mesh[0]["material"]].use_backface_culling
+                    tristrip_header.backface_culling = obj.data.materials[props["material"]].use_backface_culling
                 if "Alpha Test Enable" in props:
                     tristrip_header.alpha_blend = props["Alpha Test Enable"] > 0
                 else:
-                    tristrip_header.alpha_blend = obj.data.materials[mesh[0]["material"]].blend_method == 'BLEND'
+                    tristrip_header.alpha_blend = obj.data.materials[props["material"]].blend_method == 'BLEND'
 
                 # mesh creation
                 me = pmodel.Mesh()
@@ -293,6 +302,10 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
         pmo.mesh_header.append(mesh_header)
         
         bpy.data.objects.remove(obj, do_unlink=True)
+
+    # Adding materials
+    for _, mat in sorted(pmo_mats, key=lambda x: x[0]):
+        pmo.materials.append(mat)
 
     print("Export finished!\n\n")
 

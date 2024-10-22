@@ -83,10 +83,11 @@ class MeshHeader(PMODATA):
         self.cumulativeTristripCount: int = 0
 
         self.meshes: list[Mesh] = []
-        self.materials: list[Material] = []
+        # self.materials: list[int] = []
 
     def update(self) -> None:
-        self.materialCount = len(self.materials)
+        #self.materialCount = len(self.materials)
+        self.materialCount = len(set([mesh.tri_header.materialOffset for mesh in self.meshes]))
         self.tristripCount = len(self.meshes)
 
     def set_scale(self, scale: dict[str, float], w_scale: float = 0.0) -> None:
@@ -113,13 +114,13 @@ class FUMeshHeader(PMODATA):
         self.cumulativeTristripCount: int = 0
 
         self.meshes: list[Mesh] = []
-        self.materials: list[Material] = []
+        # self.materials: list[Material] = []
 
     def set_scale(self, scale) -> None:
         pass
 
     def update(self) -> None:
-        self.materialCount = len(self.materials)
+        self.materialCount = len(set([mesh.tri_header.materialOffset for mesh in self.meshes]))
         self.tristripCount = len(self.meshes)
 
     def tobytes(self) -> bytes:
@@ -475,7 +476,8 @@ class Mesh(PMODATA):
 class PMO:
     def __init__(self) -> None:
         self.header = PMOHeader()
-        self.mat_remaps: list[int] = []
+        #self.mat_remaps: list[int] = []
+        self.materials: list[Material] = []
         self.mesh_header: list[MeshHeader] = []
 
     def __repr__(self) -> str:
@@ -491,14 +493,6 @@ class PMO:
             meshes.extend(meshHeader.meshes)
 
         return meshes
-
-    @property
-    def materials(self) -> list[Material]:
-        materials = []
-        for meshHeader in self.mesh_header:
-            materials.extend(meshHeader.materials)
-
-        return materials
 
     @property
     def tristrips(self) -> list[TristripHeader]:
@@ -569,7 +563,6 @@ class PMO:
 
     @property
     def bone_data(self) -> bytes:
-        # TODO: Update bone data for fu models, tho it shouldn't be a problem
         data = b''
         tri: TristripHeader
         for tri in self.tristrips:
@@ -606,6 +599,15 @@ class PMO:
         if self.ver == FU_MODEL:
             file.seek(self.header.materialRemapOffset)
             file.write(self.mat_remap_data)
+    
+    @property
+    def mat_remaps(self):
+        remaps = []
+        for mheader in self.mesh_header:
+            for mesh in mheader.meshes:
+                remaps.append(mesh.tri_header.materialOffset)
+
+        return remaps
 
     def update(self) -> None:
         self.header.move(0)
@@ -624,6 +626,11 @@ class PMO:
             mheader.update()
             mheader.cumulativeMaterialCount = total_mat_count
             mheader.cumulativeTristripCount = total_tri_count
+
+            # remove p3rd cumulativeMaterialCount so multiple objects can share materias
+            if self.ver == P3RD_MODEL:
+                mheader.cumulativeMaterialCount = 0
+
             total_mat_count += mheader.materialCount
             total_tri_count += mheader.tristripCount
 
@@ -634,7 +641,6 @@ class PMO:
             self.tristrips[tri_header].move(self.header.tristripHeaderOffset + self.tristrips[0].size*tri_header)
 
         if self.ver == FU_MODEL:
-            self.mat_remaps = list(range(len(self.materials)))
             self.header.materialRemapOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
                                                len(self.tristrips))
             self.header.boneDataOffset = self.header.materialRemapOffset + len(self.mat_remap_data)
