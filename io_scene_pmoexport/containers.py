@@ -80,7 +80,7 @@ class GimImage:
         match self.data_type:
             case 4:
                 pixels = [(x | (y << 4)) for x, y in zip(self.pixels[::2], self.pixels[1::2])]
-                data = pack(f'{"".join((len(pixels)//8)*["8b8x"])}', *pixels)
+                data = pack(f'{"".join((len(pixels)//8)*["8B8x"])}', *pixels)
             case 5:
                 data = pack(f'{len(self.pixels)}B', *self.pixels)
             case _:
