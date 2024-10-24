@@ -122,6 +122,10 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
         case "active":  # active
             objs = [bpy.context.active_object]
 
+    # Deselect every object
+    for obj in bpy.data.objects:
+        obj.select_set(False)
+
     if len(objs) == 0:
         warning(["No valid meshes found"])
         return -1
@@ -138,6 +142,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
         bpy.context.collection.objects.link(obj)
 
         bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
 
         if cleanup_vg:
             bpy.ops.object.vertex_group_clean(group_select_mode="ALL")

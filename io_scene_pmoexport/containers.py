@@ -44,6 +44,9 @@ INDEX_FORMAT = [
     (5, 8),  # CLUT8
 ]
 
+WIDTH_BLOCK = 16
+HEIGHT_BLOCK = 8
+
 class PaletteType(Enum):
     RGBA5650 = 0
     RGBA5551 = 1
@@ -72,19 +75,39 @@ class GimImage:
     
     @property
     def data_size(self) -> int:
-        return int(self.width*self.height) + 0x10
+        return int(self.width*self.height / (2 if self.data_type == 4 and self.width >= 32 else 1)) + 0x10
     
     @property
     def img_data(self) -> bytes:
-        data: bytes
         match self.data_type:
             case 4:
-                pixels = [(x | (y << 4)) for x, y in zip(self.pixels[::2], self.pixels[1::2])]
-                data = pack(f'{"".join((len(pixels)//8)*["8B8x"])}', *pixels)
+                modifier = 2
             case 5:
-                data = pack(f'{len(self.pixels)}B', *self.pixels)
+                modifier = 1
             case _:
-                raise 
+                raise
+        
+        data = []
+        
+        L_WIDTH_BLOCK = min(WIDTH_BLOCK*modifier, self.width)
+        for block_v in range(max(1, self.height // HEIGHT_BLOCK)):
+            for block_h in range(max(1, self.width // L_WIDTH_BLOCK)):
+                for pixel_v in range(HEIGHT_BLOCK):
+                    for pixel_h in range(L_WIDTH_BLOCK):
+                        offset = (block_v*HEIGHT_BLOCK+pixel_v) * self.width + (block_h*L_WIDTH_BLOCK+pixel_h)
+                        data.append(self.pixels[offset])
+
+        if self.data_type == 4:
+            data = [x | y << 4 for x, y in zip(data[::2], data[1::2])]
+            if self.width < 32:
+                data = self.add_padding_blocks(data)
+        else:
+            data = data
+        
+        data = b''.join(map(lambda x: pack("B", x), data))
+        
+        print(f'Expected image data size: {len(data)}\nImage data size: {self.data_size-16}')
+        
         return data
     
     def write(self, file) -> None:
@@ -94,6 +117,16 @@ class GimImage:
         file.write(pack("2H", self.width, self.height))
         file.write(self.img_data)
         self.palette.write(file)
+
+    def add_padding_blocks(self, pixels) -> None:
+        img = []
+        res = []
+        for y in range(self.height):
+            img.append([pixels.pop(0) for x in range(self.width//2)] + [0]*8)
+        for row in img:
+            res.extend(row)
+        return res
+
 
 class TMH:
     def __init__(self) -> None:
