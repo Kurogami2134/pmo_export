@@ -8,16 +8,19 @@ from io_scene_pmoexport import export_skel
 def export(context, filepath: str, version: str):
     obj = bpy.context.active_object
     if obj.type == "EMPTY":
+        if obj.parent:
+            obj = [obj for obj in bpy.data.objects if obj.type == "EMPTY" and not obj.parent][0]
         bones = export_skel.bonesFromEmpties(obj)
     elif obj.type == "ARMATURE":
         export_skel.bonesFromArmature(obj)
     else:
         return {'CANCELLED'}
     
-    if version == "p3rd":
-        export_skel.export_p3rd_skel(bones, filepath)
-    elif version == "fu":
-        export_skel.export_fu_skel(bones, filepath)
+    with open(filepath, "wb") as file:
+        if version == "p3rd":
+            export_skel.export_p3rd_skel(bones, file)
+        elif version == "fu":
+            export_skel.export_fu_skel(bones, file)
 
     return {'FINISHED'}
 

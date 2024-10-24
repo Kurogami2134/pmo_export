@@ -71,7 +71,7 @@ def sort_vertices(obj):
     bpy.ops.object.mode_set(mode='OBJECT')
 
 
-def pmo_material(material):
+def pmo_material(material, tex: int | None = None):
     pmaterial = pmodel.Material()
 
     pmaterial.diffuse = {
@@ -86,7 +86,7 @@ def pmo_material(material):
         "b": material.pmo_ambient[2] * 255,
         "a": material.pmo_ambient[3] * 255
     }
-    pmaterial.textureIndex = material.pmo_texture_index
+    pmaterial.textureIndex = material.pmo_texture_index if tex is None else tex
 
     return pmaterial
 
@@ -96,7 +96,13 @@ def warning(messages: str = "", title: str = "Warning"):
             self.layout.label(text=message)
     bpy.context.window_manager.popup_menu(draw, title=title, icon="ERROR")
 
-def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False) -> pmodel.PMO | int:
+def mat_tex(mat):
+    for node in mat.node_tree.nodes:
+        if node.type == "TEX_IMAGE":
+            return node
+    return -1
+
+def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False, get_textures: bool = False) -> pmodel.PMO | int:
     print("Exporting PMO...")
 
     pmo = pmodel.PMO()
@@ -123,6 +129,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
     cumulativeWeightCount = 0
     materials: dict[str, int] = {}
     pmo_mats: list[pmodel.Material] = []
+    textures: dict = {}
     
     for base_obj in objs:
         obj = base_obj.copy()
@@ -169,7 +176,11 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
             if mat.name not in materials:
                 mat_id = int(mat.name.split("_")[-1]) if "_" in mat.name else len(materials)
                 materials[mat.name] = mat_id
-                pmo_mats.append((mat_id, pmo_material(mat)))
+                texture = mat_tex(mat)
+                if texture not in textures:
+                    textures[mat_tex(mat)] = len(textures)
+                pmo_mats.append((mat_id, pmo_material(mat, tex=textures[texture])))
+                
         # *&'s code for mats and pmo attributes    
         metalayers = list(filter(lambda x: "PMO " in x.name,obj.data.attributes))
         facetuples = list(zip(map(lambda x: materials[obj.data.materials[x.material_index].name], obj.data.polygons),
@@ -311,4 +322,4 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
     if warnings:
         warning(warnings)
 
-    return pmo
+    return pmo if not get_textures else (pmo, textures)
