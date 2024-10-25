@@ -60,7 +60,7 @@ class GimImage:
         self.height, self.width = 0, 0
         self.palette: Palette = Palette()
         self.pixels: list[int] = []
-        self.data_flag: int = 0
+        self.data_flag: int = 1
     
     @property
     def data_type(self) -> int:
@@ -111,6 +111,7 @@ class GimImage:
         return data
     
     def write(self, file) -> None:
+        self.palette.add_padding(self.data_type)
         file.write(pack("4i", self.size, *self.flags))
         
         file.write(pack("3i", self.data_size, self.data_flag, self.data_type))
@@ -149,9 +150,16 @@ class TMH:
 
 class Palette:
     def __init__(self, color_priority: bool = False) -> None:
-        self.flags: int = 0
+        self.flags: int = 2
         self.colors: list[tuple[float, float, float, float]] = []
         self.color_priority: int = color_priority
+
+    def add_padding(self, index_type: int):
+        match index_type:
+            case 4:
+                self.colors.extend([(0.0, 0.0, 0.0, 0.0)]*(16-self.count))
+            case 5:
+                self.colors.extend([(0.0, 0.0, 0.0, 0.0)]*(256-self.count))
 
     @property
     def type(self) -> int:
@@ -199,7 +207,6 @@ class Palette:
     def write(self, fd) -> None:
         fd.write(pack("4I", self.size, self.flags, self.type.value, self.count))
         fd.write(pack(f'<{self.count}{"I" if self.color_size == 4 else "H"}', *self.bin_colors))
-        fd.write(bytes(self.color_size*((16 if self.count <= 16 else 256)-self.count)))
 
 
 def nodeToImage(node) -> GimImage:
