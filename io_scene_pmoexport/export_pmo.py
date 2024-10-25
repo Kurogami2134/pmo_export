@@ -134,6 +134,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
     materials: dict[str, int] = {}
     pmo_mats: list[pmodel.Material] = []
     textures: dict = {}
+    texture_names: list[str] = []
     
     for base_obj in objs:
         obj = base_obj.copy()
@@ -181,10 +182,13 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
             if mat.name not in materials:
                 mat_id = int(mat.name.split("_")[-1]) if "_" in mat.name else len(materials)
                 materials[mat.name] = mat_id
-                texture = mat_tex(mat)
-                if texture not in textures:
-                    textures[mat_tex(mat)] = len(textures)
-                pmo_mats.append((mat_id, pmo_material(mat, tex=textures[texture])))
+                if get_textures:
+                    texture = mat_tex(mat)
+                    if texture.texture.name not in texture_names:
+                        texture_names.append(texture.texture.name)
+                        textures[texture] = len(textures)
+                    pmo_mats.append((mat_id, pmo_material(mat, tex=textures[texture])))
+                pmo_mats.append((mat_id, pmo_material(mat)))
                 
         # *&'s code for mats and pmo attributes
         metalayers = list(filter(lambda x: "PMO " in x.name,obj.data.attributes))
