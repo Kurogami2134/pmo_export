@@ -6,6 +6,7 @@ bpy.types.Material.pmo_diffuse = bpy.props.FloatVectorProperty(size=4, default=(
 bpy.types.Material.pmo_ambient = bpy.props.FloatVectorProperty(size=4, default=(0.5, 0.5, 0.5, 1.0), min=0, max=1,
                                                                subtype='COLOR', name='Ambient')
 bpy.types.Material.pmo_texture_index = bpy.props.IntProperty(name='Texture Index', min=0)
+bpy.types.Material.pmo_overwrite_texture_index = bpy.props.BoolProperty(name='Overwrite Generated Index', default=False)
 
 
 class PMOMaterialPanel(bpy.types.Panel):
@@ -32,6 +33,7 @@ class PMOMaterialPanel(bpy.types.Panel):
 
         row = layout.row()
         row.prop(material, "pmo_texture_index")
+        row.prop(material, "pmo_overwrite_texture_index")
 
 
 class PreparePmoPanel(bpy.types.Panel):

@@ -87,6 +87,8 @@ def pmo_material(material, tex: int | None = None):
         "a": material.pmo_ambient[3] * 255
     }
     pmaterial.textureIndex = material.pmo_texture_index if tex is None else tex
+    if material.pmo_overwrite_texture_index:
+        pmaterial.textureIndex = material.pmo_texture_index
 
     return pmaterial
 
