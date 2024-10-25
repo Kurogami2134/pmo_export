@@ -186,7 +186,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
                     textures[mat_tex(mat)] = len(textures)
                 pmo_mats.append((mat_id, pmo_material(mat, tex=textures[texture])))
                 
-        # *&'s code for mats and pmo attributes    
+        # *&'s code for mats and pmo attributes
         metalayers = list(filter(lambda x: "PMO " in x.name,obj.data.attributes))
         facetuples = list(zip(map(lambda x: materials[obj.data.materials[x.material_index].name], obj.data.polygons),
                             *map(lambda x: map(lambda y: y.value, x.data), metalayers)))
@@ -246,12 +246,12 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
                 
                 if "Backface Culling" in props:
                     tristrip_header.backface_culling = props["Backface Culling"] > 0
-                else:
-                    tristrip_header.backface_culling = obj.data.materials[props["material"]].use_backface_culling
+                #else:
+                #    tristrip_header.backface_culling = obj.data.materials[props["material"]].use_backface_culling
                 if "Alpha Test Enable" in props:
                     tristrip_header.alpha_blend = props["Alpha Test Enable"] > 0
-                else:
-                    tristrip_header.alpha_blend = obj.data.materials[props["material"]].blend_method == 'BLEND'
+                #else:
+                #    tristrip_header.alpha_blend = obj.data.materials[props["material"]].blend_method == 'BLEND'
 
                 # mesh creation
                 me = pmodel.Mesh()

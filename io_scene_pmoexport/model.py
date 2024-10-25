@@ -122,12 +122,18 @@ class FUMeshHeader(PMODATA):
     def update(self) -> None:
         self.materialCount = len(set([mesh.tri_header.materialOffset for mesh in self.meshes]))
         self.tristripCount = len(self.meshes)
+        for mesh in self.meshes:
+            mesh.tri_header.minMatOffset = min(list(set(mesh.tri_header.materialOffset for mesh in self.meshes)))
 
     def tobytes(self) -> bytes:
         byted = struct.pack("2f", *self.uvscale.values()) + self.unknown
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
         return byted
+    
+    @property
+    def mat_remaps(self):
+        return list(set(mesh.tri_header.materialOffset for mesh in self.meshes))
 
 
 class TristripHeader(PMODATA):
@@ -141,6 +147,7 @@ class TristripHeader(PMODATA):
         self.vertexOffset: int = 0
         self.indexOffset: int = 0
         self.bones: list[int] = []
+        self.minMatOffset: int = 0
 
         self.backface_culling: bool = False
         self.alpha_blend: bool = False
@@ -154,7 +161,7 @@ class TristripHeader(PMODATA):
         return data
 
     def tobytes(self) -> bytes:
-        return struct.pack("BbH3I", self.materialOffset, self.weightCount, self.cumulativeWeightCount, self.meshOffset,
+        return struct.pack("BbH3I", self.materialOffset - self.minMatOffset, self.weightCount, self.cumulativeWeightCount, self.meshOffset,
                            self.vertexOffset, self.indexOffset)
 
     def __str__(self) -> str:
@@ -476,9 +483,8 @@ class Mesh(PMODATA):
 class PMO:
     def __init__(self) -> None:
         self.header = PMOHeader()
-        #self.mat_remaps: list[int] = []
         self.materials: list[Material] = []
-        self.mesh_header: list[MeshHeader] = []
+        self.mesh_header: list[MeshHeader | FUMeshHeader] = []
 
     def __repr__(self) -> str:
         string = (f'\nMeshes: {len(self.mesh_header)}\n'
@@ -603,9 +609,9 @@ class PMO:
     @property
     def mat_remaps(self):
         remaps = []
+        mheader: FUMeshHeader
         for mheader in self.mesh_header:
-            for mesh in mheader.meshes:
-                remaps.append(mesh.tri_header.materialOffset)
+            remaps.extend(mheader.mat_remaps)
 
         return remaps
 
