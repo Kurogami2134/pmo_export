@@ -135,8 +135,8 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
     cumulativeWeightCount = 0
     materials: dict[str, int] = {}
     pmo_mats: list[pmodel.Material] = []
-    textures: dict = {}
-    texture_names: list[str] = []
+    textures: list = []
+    texture_indices: dict[str, int] = {}
     
     for base_obj in objs:
         obj = base_obj.copy()
@@ -184,14 +184,14 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
             if mat.name not in materials:
                 mat_id = int(mat.name.split("_")[-1]) if "_" in mat.name else len(materials)
                 materials[mat.name] = mat_id
+                tex = None
                 if get_textures:
                     texture = mat_tex(mat)
-                    print(texture.image.name)
-                    if texture.image.name not in texture_names:
-                        texture_names.append(texture.image.name)
-                        textures[texture] = len(textures)
-                    pmo_mats.append((mat_id, pmo_material(mat, tex=textures[texture])))
-                pmo_mats.append((mat_id, pmo_material(mat)))
+                    if texture.image.name not in texture_indices:
+                        texture_indices[texture.image.name] = len(textures)
+                        textures.append(texture)
+                    tex = texture_indices[texture.image.name]
+                pmo_mats.append((mat_id, pmo_material(mat, tex=tex)))
                 
         # *&'s code for mats and pmo attributes
         metalayers = list(filter(lambda x: "PMO " in x.name,obj.data.attributes))
@@ -328,6 +328,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
     # Adding materials
     for _, mat in sorted(pmo_mats, key=lambda x: x[0]):
         pmo.materials.append(mat)
+    print(pmo.materials)
 
     print("Export finished!\n\n")
 
