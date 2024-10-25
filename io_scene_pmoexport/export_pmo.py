@@ -186,8 +186,9 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
                 materials[mat.name] = mat_id
                 if get_textures:
                     texture = mat_tex(mat)
-                    if texture.texture.name not in texture_names:
-                        texture_names.append(texture.texture.name)
+                    print(texture.image.name)
+                    if texture.image.name not in texture_names:
+                        texture_names.append(texture.image.name)
                         textures[texture] = len(textures)
                     pmo_mats.append((mat_id, pmo_material(mat, tex=textures[texture])))
                 pmo_mats.append((mat_id, pmo_material(mat)))
