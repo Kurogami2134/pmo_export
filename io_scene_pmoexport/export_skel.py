@@ -39,9 +39,7 @@ def fix_siblings(bones: dict[int, PMOBone]) -> None:
     
     for parent in parents:
         for (child, sibling) in parents[parent]:
-            print(parent, child, sibling)
-            bones[child].sibling = sibling
-            print(bones[child])
+            bones[child].sibling = sibling if sibling == -1 else bones[sibling].bone_id
 
 
 def getParent(child, ebs) -> int:
@@ -66,7 +64,7 @@ def export_p3rd_skel(bones: dict[int, PMOBone], file) -> None:
     for idx, bone in bones.items():
         file.seek(bone_start_add+bone.bone_id*0x5C)
         file.write(b'\x01\x00\x00\x40')
-        file.write(pack("6i12f2i", 1, 0x5c, bone.bone_id, bone.parent, getFirstChild(idx, bones), bone.sibling, *bone.scale, 1.0, *[0.0]*3, 1.0, *bone.position, 1.0, -1, 0))
+        file.write(pack("6i12f2i", 1, 0x5c, bone.bone_id, bone.parent, getFirstChild(bone.bone_id, bones), bone.sibling, *bone.scale, 1.0, *[0.0]*3, 1.0, *bone.position, 1.0, -1, 0))
         name = bone.name.split(".")[0][:7].encode("utf-8")
         file.write(name)
         if len(name) < 8:
