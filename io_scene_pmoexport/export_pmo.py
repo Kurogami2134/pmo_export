@@ -186,11 +186,13 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
                 materials[mat.name] = mat_id
                 tex = None
                 if get_textures:
+                    tex = 0
                     texture = mat_tex(mat)
-                    if texture.image.name not in texture_indices:
-                        texture_indices[texture.image.name] = len(textures)
-                        textures.append(texture)
-                    tex = texture_indices[texture.image.name]
+                    if texture != -1:
+                        if texture.image.name not in texture_indices:
+                            texture_indices[texture.image.name] = len(textures)
+                            textures.append(texture)
+                        tex = texture_indices[texture.image.name]
                 pmo_mats.append((mat_id, pmo_material(mat, tex=tex)))
                 
         # *&'s code for mats and pmo attributes

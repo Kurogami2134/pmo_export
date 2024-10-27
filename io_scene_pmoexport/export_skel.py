@@ -84,7 +84,7 @@ def export_fu_skel(bones: dict[int, PMOBone], file) -> None:
     for idx, bone in bones.items():
         file.seek(bone_start_add+bone.bone_id*bone_size)
         file.write(b'\x01\x00\x00\x40' +  pack("2i", 1, bone_size))
-        file.write(pack("4i12fi", bone.bone_id, bone.parent, getFirstChild(idx, bones), bone.sibling, *bone.scale, 1.0, *[0.0]*3, 1.0, *bone.position, 1.0, -1))
+        file.write(pack("4i12fi", bone.bone_id, bone.parent, getFirstChild(bone.bone_id, bones), bone.sibling, *bone.scale, 1.0, *[0.0]*3, 1.0, *bone.position, 1.0, -1))
         file.write(pack("i", bone.chain_id))
         file.write(bytes(4*46))  # padding?
 
