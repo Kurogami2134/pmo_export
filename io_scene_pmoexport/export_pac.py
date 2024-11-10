@@ -2,10 +2,11 @@ from io_scene_pmoexport import export_pmo
 from io_scene_pmoexport import export_skel
 from io_scene_pmoexport.containers import TMH, PAC
 from io_scene_pmoexport.model import P3RD_MODEL, FU_MODEL
+from struct import pack
 
 import bpy
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None):
     pac = PAC()
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
 
@@ -36,6 +37,10 @@ def export(context, filepath: str, version: str, target: str = 'scene', prepare_
     for texture in textures:
         tmh.loadImg(texture)
     tmh.buildTMH(f)
+
+    if p3rd_helmet:
+        f  = pac.add()
+        f.write(pack("<2HI", sum([2**p for p, v in enumerate(face_flags) if v]), hairflags, phys_id))
 
     pac.save(filepath)
 
