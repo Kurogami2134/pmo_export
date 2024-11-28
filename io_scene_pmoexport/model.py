@@ -151,6 +151,8 @@ class TristripHeader(PMODATA):
 
         self.backface_culling: bool = False
         self.alpha_blend: bool = False
+        self.custom_tex_filter: bool = False
+        self.texture_filter: int = 0
 
     @property
     def bone_data(self) -> bytes:
@@ -410,6 +412,9 @@ class Mesh(PMODATA):
             prims += b'\x01\x00\x00\x21'  # enable alpha blending
             prims += b'\x07\x05\xFF\xdb'  # set alpha test parameters
         
+        if self.tri_header.custom_tex_filter:
+            prims += struct.pack("2BxB", self.tri_header.texture_filter//10, self.tri_header.texture_filter%10, 0xC6)
+        
         face_order = None
         prims += struct.pack("I", (1 if self.tri_header.backface_culling else 0) | 0x1D000000)
         index: Index
@@ -429,6 +434,9 @@ class Mesh(PMODATA):
         
         if self.tri_header.backface_culling:
             prims += struct.pack("I", 0x1D000000)  # disable backface culling
+
+        if self.tri_header.custom_tex_filter:
+            prims += struct.pack("2BxB", 7, 1, 0xC6)  # default tex filter
         
         return prims
 

@@ -69,7 +69,7 @@ class ExportPac(Operator, ExportHelper):
     )
 
     eyes: BoolProperty(
-        name="Nape",
+        name="Eyes",
         default=True
     )
 

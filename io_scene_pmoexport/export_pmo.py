@@ -255,12 +255,11 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
                 
                 if "Backface Culling" in props:
                     tristrip_header.backface_culling = props["Backface Culling"] > 0
-                #else:
-                #    tristrip_header.backface_culling = obj.data.materials[props["material"]].use_backface_culling
                 if "Alpha Test Enable" in props:
                     tristrip_header.alpha_blend = props["Alpha Test Enable"] > 0
-                #else:
-                #    tristrip_header.alpha_blend = obj.data.materials[props["material"]].blend_method == 'BLEND'
+                if "Texture Filter" in props:
+                    tristrip_header.custom_tex_filter = True
+                    tristrip_header.texture_filter = props["Texture Filter"]
 
                 # mesh creation
                 me = pmodel.Mesh()

@@ -157,18 +157,18 @@ class Palette:
     def add_padding(self, index_type: int):
         match index_type:
             case 4:
-                self.colors.extend([(0.0, 0.0, 0.0, 0.0)]*(16-self.count))
+                self.colors.extend([(0.0, 0.0, 0.0, 1.0)]*(16-self.count))
             case 5:
-                self.colors.extend([(0.0, 0.0, 0.0, 0.0)]*(256-self.count))
+                self.colors.extend([(0.0, 0.0, 0.0, 1.0)]*(256-self.count))
 
     @property
     def type(self) -> int:
-        alpha = len(set(map(lambda x: x[3], self.colors)))
+        alpha = set(map(lambda x: x[3], self.colors))
         color = len(set(map(lambda x: x[3], self.colors)))
-        if alpha <= 1:
+        if alpha == {1.0}:
             return PaletteType.RGBA5650
         
-        if alpha == 2 and not self.color_priority:
+        if alpha == {0.0, 1.0} and not self.color_priority:
             return PaletteType.RGBA5551
 
         if color > 2**4:
