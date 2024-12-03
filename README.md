@@ -9,6 +9,8 @@ Unite and Monster Hunter Portable 3rd for the Sony PSP console.
 
 You can get a clue on how to use this with this [pretty bad tutorial](https://youtu.be/qGSAnYVDiW0).
 
+Some more info about modding the games can be found [here](https://github.com/Kurogami2134/MHP3rd-Game-FIle-List/blob/main/guide/guide.md).
+
 ## Known bugs
 
 Monster models for MHP3rd are not working.
