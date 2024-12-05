@@ -1,7 +1,7 @@
 import bpy
 import bmesh
-from io_scene_pmoexport import model as pmodel
-from io_scene_pmoexport.prep_pmo import prep_pmo
+from . import model as pmodel
+from .prep_pmo import xenthos_prep_pmo, asterisk_prep_pmo
 
 try:
     from pyffi.utils import trianglestripifier
@@ -104,7 +104,7 @@ def mat_tex(mat):
             return node
     return -1
 
-def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False, get_textures: bool = False) -> pmodel.PMO | int:
+def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, get_textures: bool = False, apply_modifiers: bool = False) -> pmodel.PMO | int:
     print("Exporting PMO...")
 
     pmo = pmodel.PMO()
@@ -147,6 +147,9 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
 
+        if apply_modifiers:
+            bpy.ops.object.convert(target="MESH")
+
         if cleanup_vg:
             bpy.ops.object.vertex_group_clean(group_select_mode="ALL")
 
@@ -155,8 +158,13 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: bool = False, cle
 
         fix_vg(obj)
 
-        if prepare_pmo:
-            prep_pmo(obj)
+        match prepare_pmo:
+            case "xenthos":
+                xenthos_prep_pmo(obj)
+            case "*&":
+                asterisk_prep_pmo(obj)
+            case _:
+                pass
 
         sort_vertices(obj)
 

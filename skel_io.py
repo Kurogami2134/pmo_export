@@ -3,7 +3,7 @@ from bpy.types import Operator
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty, EnumProperty
 
-from io_scene_pmoexport import export_skel
+from . import export_skel
 
 def export(context, filepath: str, version: str):
     obj = bpy.context.active_object

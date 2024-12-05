@@ -3,13 +3,13 @@ from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty, BoolProperty, EnumProperty
 from bpy.types import Operator
 
-from io_scene_pmoexport import export_pmo
+from . import export_pmo
 
 
 FU_MODEL = b'1.0\x00'
 P3RD_MODEL = b'102\x00'
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False):
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
     pmo = export_pmo.export(ver, target, prepare_pmo, cleanup_vg)
     if not isinstance(pmo, int):
@@ -55,10 +55,15 @@ class ExportPmo(Operator, ExportHelper):
         default="visible",
     )
 
-    prep_pmo: BoolProperty(
+    prep_pmo: EnumProperty(
         name="Prepare PMO",
         description="Triangulate mesh and split vertex for normals/uvs. (Same as pressing 'Prepare PMO' but won't have a permanent effect on the model)",
-        default=False
+        items=(
+            ("none", "None", "Do not run any prep script"),
+            ("*&", "*&'s", "Run *&'s script"),
+            ("xenthos", "Xenthos'", "Run Xenthos' script"),
+        ),
+        default="none"
     )
 
     cleanup_vg: BoolProperty(
@@ -67,8 +72,14 @@ class ExportPmo(Operator, ExportHelper):
         default=False
     )
 
+    apply_modifiers: BoolProperty(
+        name="Apply Modifiers",
+        description="Apply modifiers before exporting",
+        default=False
+    )
+
     def execute(self, context):
-        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg)
+        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.apply_modifiers)
 
 
 def menu_func_export(self, context):

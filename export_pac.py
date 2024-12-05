@@ -1,16 +1,16 @@
-from io_scene_pmoexport import export_pmo
-from io_scene_pmoexport import export_skel
-from io_scene_pmoexport.containers import TMH, PAC
-from io_scene_pmoexport.model import P3RD_MODEL, FU_MODEL
+from . import export_pmo
+from . import export_skel
+from .containers import TMH, PAC
+from .model import P3RD_MODEL, FU_MODEL
 from struct import pack
 
 import bpy
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: bool = False, cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None, app_modifiers: bool = False):
     pac = PAC()
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
 
-    pmo, textures = export_pmo.export(ver, target, prepare_pmo, cleanup_vg, get_textures=True)
+    pmo, textures = export_pmo.export(ver, target, prepare_pmo, cleanup_vg, get_textures=True, apply_modifiers=app_modifiers)
     if isinstance(pmo, int):
         return {'CANCELLED'}
     

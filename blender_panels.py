@@ -1,5 +1,5 @@
 import bpy
-from io_scene_pmoexport.prep_pmo import prep_pmo
+from .prep_pmo import xenthos_prep_pmo, asterisk_prep_pmo
 
 bpy.types.Material.pmo_diffuse = bpy.props.FloatVectorProperty(size=4, default=(1.0, 1.0, 1.0, 1.0), min=0, max=1,
                                                         subtype='COLOR', name='Diffuse')
@@ -49,33 +49,48 @@ class PreparePmoPanel(bpy.types.Panel):
         # obj = context.object
 
         row = layout.row()
-        row.operator("object.prepare_pmo")
+        row.operator("object.asterisk_prepare_pmo")
+        row.operator("object.xenthos_prepare_pmo")
 
 
-class PreparePmo(bpy.types.Operator):
+class XePreparePmo(bpy.types.Operator):
     """Triangulate mesh and split vertex for normals/uvs."""
-    bl_idname = "object.prepare_pmo"
-    bl_label = "Run"
+    bl_idname = "object.xenthos_prepare_pmo"
+    bl_label = "Xenthos"
 
     @classmethod
     def poll(cls, context):
         return context.active_object is not None
 
     def execute(self, context):
-        prep_pmo(context.active_object)
+        xenthos_prep_pmo(context.active_object)
         return {'FINISHED'}
 
+class AsPreparePmo(bpy.types.Operator):
+    """Triangulate mesh and split vertex for normals/uvs."""
+    bl_idname = "object.asterisk_prepare_pmo"
+    bl_label = "*&"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        asterisk_prep_pmo(context.active_object)
+        return {'FINISHED'}
 
 def register():
     bpy.utils.register_class(PMOMaterialPanel)
     bpy.utils.register_class(PreparePmoPanel)
-    bpy.utils.register_class(PreparePmo)
+    bpy.utils.register_class(XePreparePmo)
+    bpy.utils.register_class(AsPreparePmo)
 
 
 def unregister():
     bpy.utils.unregister_class(PMOMaterialPanel)
     bpy.utils.unregister_class(PreparePmoPanel)
-    bpy.utils.unregister_class(PreparePmo)
+    bpy.utils.unregister_class(XePreparePmo)
+    bpy.utils.unregister_class(AsPreparePmo)
 
 
 if __name__ == "__main__":

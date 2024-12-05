@@ -3,7 +3,7 @@ from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty
 from bpy.types import Operator, Panel
 
-from io_scene_pmoexport.export_pac import export
+from .export_pac import export
 
 
 class ExportPac(Operator, ExportHelper):
@@ -41,10 +41,15 @@ class ExportPac(Operator, ExportHelper):
         default="visible",
     )
 
-    prep_pmo: BoolProperty(
+    prep_pmo: EnumProperty(
         name="Prepare PMO",
         description="Triangulate mesh and split vertex for normals/uvs. (Same as pressing 'Prepare PMO' but won't have a permanent effect on the model)",
-        default=False
+        items=(
+            ("none", "None", "Do not run any prep script"),
+            ("*&", "*&'s", "Run *&'s script"),
+            ("xenthos", "Xenthos'", "Run Xenthos' script"),
+        ),
+        default="none"
     )
 
     cleanup_vg: BoolProperty(
@@ -110,9 +115,15 @@ class ExportPac(Operator, ExportHelper):
         default=False
     )
 
+    apply_modifiers: BoolProperty(
+        name="Apply Modifiers",
+        description="Apply modifiers before exporting",
+        default=False
+    )
+
     def execute(self, context):
         face = (self.upper_face, self.ears, self.nape, self.lower_face, self.nose, self.eyes, self.makeup1, self.makeup2)
-        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.p3rd_helmet, face, self.hairflags, self.phys_id)
+        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.p3rd_helmet, face, self.hairflags, self.phys_id, self.apply_modifiers)
     
     def draw(self, context):
         layout = self.layout
@@ -123,6 +134,7 @@ class ExportPac(Operator, ExportHelper):
         layout.prop(self, 'export_target')
         layout.prop(self, 'prep_pmo')
         layout.prop(self, 'cleanup_vg')
+        layout.prop(self, 'apply_modifiers')
 
 
 class FaceFlags(Panel):
