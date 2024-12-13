@@ -9,9 +9,9 @@ from . import export_pmo
 FU_MODEL = b'1.0\x00'
 P3RD_MODEL = b'102\x00'
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, apply_modifiers: bool = False):
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
-    pmo = export_pmo.export(ver, target, prepare_pmo, cleanup_vg)
+    pmo = export_pmo.export(ver, target, prepare_pmo, cleanup_vg, apply_modifiers)
     if not isinstance(pmo, int):
         f = open(filepath, 'wb')
         pmo.save(f)
