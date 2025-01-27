@@ -1,7 +1,8 @@
-from io_scene_pmoexport import blender_panels
-from io_scene_pmoexport import pmo_export_menu
-from io_scene_pmoexport import skel_io
-from io_scene_pmoexport import pac_export_menu
+from . import blender_panels
+from . import pmo_export_menu
+from . import skel_io
+from . import pac_export_menu
+
 
 bl_info = {
     "name": "PMO Export",

@@ -119,7 +119,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             objs = [obj for obj in bpy.context.scene.objects if obj.type == "MESH" and not obj.hide_get()]
 
         case "selection":  # selection
-            objs = [obj for obj in bpy.context.scene.objects if obj.type == "MESH" and obj.select]
+            objs = [obj for obj in bpy.context.scene.objects if obj.type == "MESH" and obj.select_get()]
 
         case "active":  # active
             objs = [bpy.context.active_object]
