@@ -219,23 +219,6 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             tristripifier = trianglestripifier.TriangleStripifier(me)
             tristrips = tristripifier.find_all_strips()  # indices
 
-            # Join all tristrips
-            if hard_tristripification:
-                stripest: list = []
-                if len(tristrips) > 1:
-                    tristrips = sorted(tristrips)
-                    for strip in range(len(tristrips)):
-                        if len(stripest) > 0 and len(stripest) % 2 == 0:
-                            stripest.append(stripest[-1])
-                        if strip < len(tristrips) - 1:
-                            tristrips[strip].append(tristrips[strip][-1])
-                        new = [tristrips[strip][0]] if strip > 0 else []
-                        new.extend(tristrips[strip])
-                        stripest.extend(new)
-                else:
-                    stripest = tristrips[0]
-                tristrips = [stripest]
-
             for tri in tristrips:
                 bones = set()
                 for x in [[x.group for x in obj.data.vertices[v].groups] for v in tri]:
@@ -243,6 +226,25 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                         bones.add((int(bpy.context.active_object.vertex_groups[bone].name.split(".")[-1]), obj.vertex_groups[bone].index))
                 bones = tuple(bones)
                 tris[bones] = tris[bones] + [tri] if bones in tris.keys() else [tri]
+            
+            # Join all tristrips
+            if hard_tristripification:
+                for bones, tristrips in tris.items():
+                    stripest: list = []
+                    if len(tristrips) > 1:
+                        tristrips = sorted(tristrips)
+                        for strip in range(len(tristrips)):
+                            if len(stripest) > 0 and len(stripest) % 2 == 0:
+                                stripest.append(stripest[-1])
+                            if strip < len(tristrips) - 1:
+                                tristrips[strip].append(tristrips[strip][-1])
+                            new = [tristrips[strip][0]] if strip > 0 else []
+                            new.extend(tristrips[strip])
+                            stripest.extend(new)
+                    else:
+                        stripest = tristrips[0]
+                    tris[bones] = [stripest]
+
             ready.append(({k: v for k, v in zip(["material"] + labels, props)}, tris))
 
         uvs = {}
