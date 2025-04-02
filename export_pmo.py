@@ -104,7 +104,7 @@ def mat_tex(mat):
             return node
     return -1
 
-def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, get_textures: bool = False, apply_modifiers: bool = False) -> pmodel.PMO | int:
+def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, get_textures: bool = False, apply_modifiers: bool = False, hard_tristripification: bool = False) -> pmodel.PMO | int:
     print("Exporting PMO...")
 
     pmo = pmodel.PMO()
@@ -218,6 +218,23 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             me = trianglestripifier.Mesh(faces=face_collection)
             tristripifier = trianglestripifier.TriangleStripifier(me)
             tristrips = tristripifier.find_all_strips()  # indices
+
+            # Join all tristrips
+            if hard_tristripification:
+                stripest: list = []
+                if len(tristrips) > 1:
+                    tristrips = sorted(tristrips)
+                    for strip in range(len(tristrips)):
+                        if len(stripest) > 0 and len(stripest) % 2 == 0:
+                            stripest.append(stripest[-1])
+                        if strip < len(tristrips) - 1:
+                            tristrips[strip].append(tristrips[strip][-1])
+                        new = [tristrips[strip][0]] if strip > 0 else []
+                        new.extend(tristrips[strip])
+                        stripest.extend(new)
+                else:
+                    stripest = tristrips[0]
+                tristrips = [stripest]
 
             for tri in tristrips:
                 bones = set()

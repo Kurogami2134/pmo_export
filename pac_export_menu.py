@@ -121,9 +121,15 @@ class ExportPac(Operator, ExportHelper):
         default=False
     )
 
+    hard_tristripification: BoolProperty(
+        name="Hard Tristripification",
+        description="Create as few tristrips as possible",
+        default=False
+    )
+
     def execute(self, context):
         face = (self.upper_face, self.ears, self.nape, self.lower_face, self.nose, self.eyes, self.makeup1, self.makeup2)
-        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.p3rd_helmet, face, self.hairflags, self.phys_id, self.apply_modifiers)
+        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.p3rd_helmet, face, self.hairflags, self.phys_id, self.apply_modifiers, self.hard_tristripification)
     
     def draw(self, context):
         layout = self.layout
@@ -135,6 +141,7 @@ class ExportPac(Operator, ExportHelper):
         layout.prop(self, 'prep_pmo')
         layout.prop(self, 'cleanup_vg')
         layout.prop(self, 'apply_modifiers')
+        layout.prop(self, 'hard_tristripification')
 
 
 class FaceFlags(Panel):

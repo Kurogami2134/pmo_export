@@ -6,11 +6,11 @@ from struct import pack
 
 import bpy
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None, app_modifiers: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None, app_modifiers: bool = False, hard_tristripification: bool = False):
     pac = PAC()
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
 
-    pmo, textures = export_pmo.export(ver, target, prepare_pmo, cleanup_vg, get_textures=True, apply_modifiers=app_modifiers)
+    pmo, textures = export_pmo.export(ver, target, prepare_pmo, cleanup_vg, get_textures=True, apply_modifiers=app_modifiers, hard_tristripification=hard_tristripification)
     if isinstance(pmo, int):
         return {'CANCELLED'}
     
