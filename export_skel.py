@@ -4,13 +4,13 @@ from struct import pack
 
 class PMOBone():
     def __init__(self, bone_id: int = 0, parent: int = 0, name: str = "", position: tuple[float, float, float] = (0.0, 0.0, 0.0),
-                 scale: tuple[float, float, float] = (0.0, 0.0, 0.0)) -> None:
+                 scale: tuple[float, float, float] = (0.0, 0.0, 0.0), rotation: tuple = (0.0, 0.0, 0.0)) -> None:
         self.bone_id: int = bone_id
         self.parent: int = parent
         self.child: int = -1
         self.sibling: int = -1
         self.scale: tuple[float, float, float] = scale
-        self.rotation: tuple[float, float, float] = (1.0, 1.0, 1.0)
+        self.rotation: tuple[float, float, float] = rotation
         self.position: tuple[float, float, float] = position
         self.name: str = name
         self.chain_id: int = -1
@@ -64,7 +64,7 @@ def export_p3rd_skel(bones: dict[int, PMOBone], file) -> None:
     for idx, bone in bones.items():
         file.seek(bone_start_add+bone.bone_id*0x5C)
         file.write(b'\x01\x00\x00\x40')
-        file.write(pack("6i12f2i", 1, 0x5c, bone.bone_id, bone.parent, getFirstChild(bone.bone_id, bones), bone.sibling, *bone.scale, 1.0, *[0.0]*3, 1.0, *bone.position, 1.0, -1, 0))
+        file.write(pack("6i12f2i", 1, 0x5c, bone.bone_id, bone.parent, getFirstChild(bone.bone_id, bones), bone.sibling, *bone.scale, 1.0, *bone.rotation, 1.0, *bone.position, 1.0, -1, 0))
         name = bone.name.split(".")[0][:7].encode("utf-8")
         file.write(name)
         if len(name) < 8:
@@ -84,7 +84,7 @@ def export_fu_skel(bones: dict[int, PMOBone], file) -> None:
     for idx, bone in bones.items():
         file.seek(bone_start_add+bone.bone_id*bone_size)
         file.write(b'\x01\x00\x00\x40' +  pack("2i", 1, bone_size))
-        file.write(pack("4i12fi", bone.bone_id, bone.parent, getFirstChild(bone.bone_id, bones), bone.sibling, *bone.scale, 1.0, *[0.0]*3, 1.0, *bone.position, 1.0, -1))
+        file.write(pack("4i12fi", bone.bone_id, bone.parent, getFirstChild(bone.bone_id, bones), bone.sibling, *bone.scale, 1.0, *bone.rotation, 1.0, *bone.position, 1.0, -1))
         file.write(pack("i", bone.chain_id))
         file.write(bytes(4*46))  # padding?
 
@@ -114,7 +114,7 @@ def bonesFromEmpties(obj) -> dict[int, (int, int, int, str)]:
     for idx, eb in enumerate(ebs):
         parent = getParent(eb, ebs)
         bone_index = eb["id"]
-        bones[idx] = PMOBone(bone_index, bones[parent].bone_id if parent >= 0 else -1, eb.name, tuple(eb.location), tuple(eb.scale))
+        bones[idx] = PMOBone(bone_index, bones[parent].bone_id if parent >= 0 else -1, eb.name, tuple(eb.location), tuple(eb.scale), tuple(eb.rotation_euler))
         bones[idx].chain_id = eb["chain id"] if "chain id" in eb else -1
     
     return bones

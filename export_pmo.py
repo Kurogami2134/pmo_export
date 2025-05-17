@@ -23,7 +23,7 @@ def fix_vg(obj):
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.vertex_group_set_active(group=vg.name)
         bpy.ops.object.vertex_group_select()
-        bpy.ops.mesh.select_linked(delimit={'MATERIAL'})
+        bpy.ops.mesh.select_linked(delimit={'NORMAL'})
         bpy.ops.object.vertex_group_deselect()
         bpy.context.scene.tool_settings.vertex_group_weight = 0
         bpy.ops.object.vertex_group_assign()
@@ -156,7 +156,8 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
         if len([v for v in obj.data.vertices if len(v.groups) == 0]):
             warnings.append(f'Object "{base_obj.name}" has vertices that are not tied to any vertex group and those will not be exported.')
 
-        fix_vg(obj)
+        if not hard_tristripification:
+            fix_vg(obj)
 
         match prepare_pmo:
             case "xenthos":
@@ -171,6 +172,12 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
         mesh_header = pmodel.MeshHeader() if pmo_ver == pmodel.P3RD_MODEL else pmodel.FUMeshHeader()
         mesh_header.materialCount = len(obj.material_slots)
         mesh_header.tristripCount = len(obj.vertex_groups)
+
+        if "PMO Alpha Blending Params" in obj:
+            mesh_header.alpha_blending_params = obj["PMO Alpha Blending Params"]
+        
+        if "PMO Light Distance Attenuation Factor" in obj:
+            mesh_header.ld_at_factor_c = obj["PMO Light Distance Attenuation Factor"]
 
         # Scale definition
         maxx = max(max([vert.co.x for vert in obj.data.vertices]),
@@ -284,6 +291,8 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                     tristrip_header.backface_culling = props["Backface Culling"] > 0
                 if "Alpha Test Enable" in props:
                     tristrip_header.alpha_blend = props["Alpha Test Enable"] > 0
+                if  "Shade Flat" in props:
+                    tristrip_header.shade_flat = props["Shade Flat"]
                 if "Texture Filter" in props:
                     tristrip_header.custom_tex_filter = True
                     tristrip_header.texture_filter = props["Texture Filter"]

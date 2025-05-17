@@ -75,8 +75,9 @@ class MeshHeader(PMODATA):
         self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
         self.w_scale: float = 0.0
         self.uv_scale: dict[str, float] = {"u": 1.0, "v": 1.0}
-        self.unknown: bytes = (b'\x00\x00\x00\x00\x00\x00\x00\x00'  # padding?
-                               b'\x03\x00\x00\x80\x32\x00\x00\xdf')  # gpu opcodes?
+        self.unknown: bytes = b'\x00\x00\x00\x00\x00\x00\x00\x00'  # padding?
+        self.ld_at_factor_c: int = 3  # light distance attenuation factor C for light source 1
+        self.alpha_blending_params: int = 0x32
         self.materialCount: int = 0
         self.cumulativeMaterialCount: int = 0
         self.tristripCount: int = 0
@@ -97,6 +98,8 @@ class MeshHeader(PMODATA):
     def tobytes(self) -> bytes:
         byted = struct.pack("3f", *self.scale.values()) + struct.pack("f", self.w_scale)
         byted += struct.pack("2f", *self.uv_scale.values()) + self.unknown
+        byted += struct.pack("B", self.ld_at_factor_c) + b'\x00\x00\x80'
+        byted += struct.pack("B", self.alpha_blending_params) + b'\x00\x00\xDF'
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
         return byted
@@ -153,6 +156,7 @@ class TristripHeader(PMODATA):
         self.alpha_blend: bool = False
         self.custom_tex_filter: bool = False
         self.texture_filter: int = 0
+        self.shade_flat: int = 0
 
     @property
     def bone_data(self) -> bytes:
@@ -412,6 +416,9 @@ class Mesh(PMODATA):
             prims += b'\x01\x00\x00\x21'  # enable alpha blending
             prims += b'\x07\x05\xFF\xdb'  # set alpha test parameters
         
+        if self.tri_header.shade_flat:
+            prims += b'\x00\x00\x00\x50'
+        
         if self.tri_header.custom_tex_filter:
             prims += struct.pack("2BxB", self.tri_header.texture_filter//10, self.tri_header.texture_filter%10, 0xC6)
         
@@ -431,6 +438,9 @@ class Mesh(PMODATA):
         
         if self.tri_header.alpha_blend:
             prims += b'\x00\x00\x00\x21'  # disable alpha blending
+        
+        if self.tri_header.shade_flat:
+            prims += b'\x01\x00\x00\x50'
         
         if self.tri_header.backface_culling:
             prims += struct.pack("I", 0x1D000000)  # disable backface culling
