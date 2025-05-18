@@ -110,11 +110,14 @@ class FUMeshHeader(PMODATA):
         super().__init__()
         self.size: int = 0x18
         self.uvscale: dict[str, float] = {"u": 1.0, "v": 1.0}
-        self.unknown: bytes = b'\x03\x00\x00\x80\x00\x00\x00\x00'  # gpu opcodes?
+        self.ld_at_factor_c: int = 3  # light distance attenuation factor C for light source 1
+        self.unknown: bytes = b'\x00\x00\x00\x00'  # gpu opcode?
         self.materialCount: int = 0
         self.cumulativeMaterialCount: int = 0
         self.tristripCount: int = 0
         self.cumulativeTristripCount: int = 0
+
+        self.alpha_blending_params: None
 
         self.meshes: list[Mesh] = []
         # self.materials: list[Material] = []
@@ -129,7 +132,8 @@ class FUMeshHeader(PMODATA):
             mesh.tri_header.minMatOffset = min(list(set(mesh.tri_header.materialOffset for mesh in self.meshes)))
 
     def tobytes(self) -> bytes:
-        byted = struct.pack("2f", *self.uvscale.values()) + self.unknown
+        byted = struct.pack("2f", *self.uvscale.values())
+        byted += struct.pack("B", self.ld_at_factor_c) + b'\x00\x00\x80' + self.unknown
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
         return byted
