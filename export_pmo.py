@@ -13,28 +13,6 @@ except:
     from pyffi.utils import trianglestripifier
 
 
-def fix_vg(obj):
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_mode(type="VERT")
-
-    groups = sorted(obj.vertex_groups, key=lambda x:x.name)
-
-    for idx, vg in enumerate(groups):
-        bpy.ops.mesh.select_all(action='DESELECT')
-        bpy.ops.object.vertex_group_set_active(group=vg.name)
-        bpy.ops.object.vertex_group_select()
-        bpy.ops.mesh.select_linked(delimit={'NORMAL'})
-        bpy.ops.object.vertex_group_deselect()
-        bpy.context.scene.tool_settings.vertex_group_weight = 0
-        bpy.ops.object.vertex_group_assign()
-        bpy.context.scene.tool_settings.vertex_group_weight = 1
-        
-        while vg.index > idx:
-            bpy.ops.object.vertex_group_move(direction='UP')
-
-    bpy.ops.object.mode_set(mode='OBJECT')
-
-
 def sort_vertices(obj):
     print("Sorting vertices...")
     bpy.ops.object.mode_set(mode='EDIT')
@@ -155,9 +133,6 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
 
         if len([v for v in obj.data.vertices if len(v.groups) == 0]):
             warnings.append(f'Object "{base_obj.name}" has vertices that are not tied to any vertex group and those will not be exported.')
-
-        if not hard_tristripification:
-            fix_vg(obj)
 
         match prepare_pmo:
             case "xenthos":
