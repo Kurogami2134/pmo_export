@@ -47,6 +47,11 @@ INDEX_FORMAT = [
 WIDTH_BLOCK = 16
 HEIGHT_BLOCK = 8
 
+class ColorLimitError(Exception):
+    def __init__(self, msg="Color count over 256"):
+        self.msg = msg
+        super().__init__(self.msg)
+
 class PaletteType(Enum):
     RGBA5650 = 0
     RGBA5551 = 1
@@ -85,7 +90,7 @@ class GimImage:
             case 5:
                 modifier = 1
             case _:
-                raise
+                raise ColorLimitError
         
         data = []
         

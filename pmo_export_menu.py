@@ -17,7 +17,8 @@ def export(context, filepath: str, version: str, target: str = 'scene', prepare_
         pmo.save(f)
         f.close()
 
-    return {'FINISHED'}
+        return {'FINISHED'}
+    return {'CANCELLED'}
 
 
 class ExportPmo(Operator, ExportHelper):
