@@ -80,7 +80,7 @@ def mat_tex(mat):
             return node
     return -1
 
-def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, get_textures: bool = False, apply_modifiers: bool = False, hard_tristripification: bool = False) -> pmodel.PMO | int:
+def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, get_textures: bool = False, apply_modifiers: bool = False, hard_tristripification: bool = False) -> tuple[pmodel.PMO | int, list | None]:
     try:
         print("Exporting PMO...")
 
@@ -107,7 +107,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
 
         if len(objs) == 0:
             warning(["No valid meshes found"])
-            return -1
+            return -1, None
 
         cumulativeWeightCount = 0
         materials: dict[str, int] = {}
@@ -346,7 +346,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
         if warnings:
             warning(warnings)
 
-        return pmo if not get_textures else (pmo, textures)
+        return (pmo, None) if not get_textures else (pmo, textures)
     except ValueError:
         warning(["Mesh is not triangulated."], "Error")
         return -1, None
