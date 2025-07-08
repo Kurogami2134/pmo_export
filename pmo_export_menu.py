@@ -9,17 +9,20 @@ from . import export_pmo
 FU_MODEL = b'1.0\x00'
 P3RD_MODEL = b'102\x00'
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, apply_modifiers: bool = False, hard_tristripification: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, apply_modifiers: bool = False, hard_tristripification: bool = False, split: bool = False):
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
     pmo, _ = export_pmo.export(ver, target=target, prepare_pmo=prepare_pmo, cleanup_vg=cleanup_vg, apply_modifiers=apply_modifiers, hard_tristripification=hard_tristripification)
-    if not isinstance(pmo, int):
-        f = open(filepath, 'wb')
-        pmo.save(f)
-        f.close()
+    if isinstance(pmo, int):
+        return {'CANCELLED'}
+    if split:
+        with open(filepath+"_header.pmo", 'wb') as f1, open(filepath+"_mesh.bin", 'wb') as f2:
+            pmo.save(f1, second=f2)
+    else:
+        with open(filepath, 'wb') as f:
+            pmo.save(f)
 
-        return {'FINISHED'}
-    return {'CANCELLED'}
-
+    return {'FINISHED'}
+    
 
 class ExportPmo(Operator, ExportHelper):
     """Export Monster Hunter PMO models."""
@@ -85,8 +88,14 @@ class ExportPmo(Operator, ExportHelper):
         default=False
     )
 
+    split: BoolProperty(
+        name="Split Model",
+        description="Separate headers and mesh data.",
+        default=False
+    )
+
     def execute(self, context):
-        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.apply_modifiers, self.hard_tristripification)
+        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.apply_modifiers, self.hard_tristripification, self.split)
 
 
 def menu_func_export(self, context):
