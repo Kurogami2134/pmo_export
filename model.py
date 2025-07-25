@@ -1,4 +1,5 @@
 import struct
+from math import ceil
 
 FU_MODEL = b'1.0\x00'
 P3RD_MODEL = b'102\x00'
@@ -288,6 +289,10 @@ class Vertex(PMODATA):
 
     def set_scale(self, newscale: dict) -> None:
         self.scale = newscale
+    
+    def offset_uvs(self, u_offset: float, v_offset: float) -> None:
+        self.u += u_offset
+        self.v += v_offset
     
     def set_uv_scale(self, u: float, v: float) -> None:
         self.uv_scale['u'] = u
@@ -589,10 +594,12 @@ class PMO:
         return vertices
 
     def fix_scales(self) -> None:
-        max_u = max(max([vert.u for vert in self.vertices]),
-                   -1*min([vert.u for vert in self.vertices]))
-        max_v = max(max([vert.v for vert in self.vertices]),
-                   -1*min([vert.v for vert in self.vertices]))
+        min_u = min(0, min([vert.u for vert in self.vertices]))
+        min_v = min(0, min([vert.v for vert in self.vertices]))
+        u_offset = ceil(abs(min_u)) if min_u < 0 else 0
+        v_offset = ceil(abs(min_v)) if min_v < 0 else 0
+        max_u = u_offset + max([vert.u for vert in self.vertices])
+        max_v = v_offset + max([vert.v for vert in self.vertices])
         max_x = max(max([vert.x for vert in self.vertices]),
                    -1*min([vert.x for vert in self.vertices]), self.header.scale["x"])
         max_y = max(max([vert.y for vert in self.vertices]),
@@ -616,6 +623,7 @@ class PMO:
         for vert in self.vertices:
             vert.set_scale(new_scale)
             vert.set_uv_scale(max_u, max_v)
+            vert.offset_uvs(u_offset, v_offset)
 
     @property
     def bone_data(self) -> bytes:
