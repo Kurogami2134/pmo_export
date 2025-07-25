@@ -75,7 +75,7 @@ class MeshHeader(PMODATA):
         self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
         self.w_scale: float = 0.0
         self.uv_scale: dict[str, float] = {"u": 1.0, "v": 1.0}
-        self.unknown: bytes = b'\x00\x00\x00\x00\x00\x00\x00\x00'  # padding?
+        self.uv_offset: dict[str, float] = {'u': 0.0, 'v': 0.0}
         self.ld_at_factor_c: int = 3  # light distance attenuation factor C for light source 1
         self.alpha_blending_params: int = 0x32
         self.materialCount: int = 0
@@ -94,10 +94,18 @@ class MeshHeader(PMODATA):
     def set_scale(self, scale: dict[str, float], w_scale: float = 0.0) -> None:
         self.scale = scale
         self.w_scale = w_scale
+    
+    def set_uv_scale(self, u: float, v: float) -> None:
+        self.uv_scale['u'] = u
+        self.uv_scale['v'] = v
+    
+    def set_uv_offset(self, u: float, v: float) -> None:
+        self.uv_offset['u'] = u
+        self.uv_offset['v'] = v
 
     def tobytes(self) -> bytes:
         byted = struct.pack("3f", *self.scale.values()) + struct.pack("f", self.w_scale)
-        byted += struct.pack("2f", *self.uv_scale.values()) + self.unknown
+        byted += struct.pack("2f", *self.uv_scale.values()) + struct.pack("2f", *self.uv_offset.values())
         byted += struct.pack("B", self.ld_at_factor_c) + b'\x00\x00\x80'
         byted += struct.pack("B", self.alpha_blending_params) + b'\x00\x00\xDF'
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
@@ -109,7 +117,7 @@ class FUMeshHeader(PMODATA):
     def __init__(self) -> None:
         super().__init__()
         self.size: int = 0x18
-        self.uvscale: dict[str, float] = {"u": 1.0, "v": 1.0}
+        self.uv_scale: dict[str, float] = {"u": 1.0, "v": 1.0}
         self.ld_at_factor_c: int = 3  # light distance attenuation factor C for light source 1
         self.unknown: bytes = b'\x00\x00\x00\x00'  # gpu opcode?
         self.materialCount: int = 0
@@ -125,6 +133,13 @@ class FUMeshHeader(PMODATA):
     def set_scale(self, scale) -> None:
         pass
 
+    def set_uv_scale(self, u: float, v: float) -> None:
+        self.uv_scale['u'] = u
+        self.uv_scale['v'] = v
+        
+    def set_uv_offset(self, u: float, v: float) -> None:
+        pass
+
     def update(self) -> None:
         self.materialCount = len(set([mesh.tri_header.materialOffset for mesh in self.meshes]))
         self.tristripCount = len(self.meshes)
@@ -132,7 +147,7 @@ class FUMeshHeader(PMODATA):
             mesh.tri_header.minMatOffset = min(list(set(mesh.tri_header.materialOffset for mesh in self.meshes)))
 
     def tobytes(self) -> bytes:
-        byted = struct.pack("2f", *self.uvscale.values())
+        byted = struct.pack("2f", *self.uv_scale.values())
         byted += struct.pack("B", self.ld_at_factor_c) + b'\x00\x00\x80' + self.unknown
         byted += struct.pack("H", self.materialCount) + struct.pack("H", self.cumulativeMaterialCount)
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
@@ -212,6 +227,7 @@ class Vertex(PMODATA):
         self.weitrans: int | None = None
         self.color_trans: int | None = None
         self.scale: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self.uv_scale: dict[str, float] = {'u': 1.0, 'v': 1.0}
         self.verfor: str = "1B2H3b3h"  # vertex format
         self.size: int = self.calcsize()
 
@@ -252,8 +268,8 @@ class Vertex(PMODATA):
         if self.weitrans is not None:
             data.extend([round(float(w)*self.weitrans) for w in self.w])
         if self.textrans is not None:
-            data.append(max(0, round(float(self.u) * self.textrans)))
-            data.append(max(0, round(float(self.v) * self.textrans)))
+            data.append(max(0, round((float(self.u) / self.uv_scale['u']) * self.textrans)))
+            data.append(max(0, round((float(self.v) / self.uv_scale['v']) * self.textrans)))
         if self.color_trans is not None:
             data.append(self.color)  # color_trans
         if self.nortrans is not None:
@@ -272,6 +288,10 @@ class Vertex(PMODATA):
 
     def set_scale(self, newscale: dict) -> None:
         self.scale = newscale
+    
+    def set_uv_scale(self, u: float, v: float) -> None:
+        self.uv_scale['u'] = u
+        self.uv_scale['v'] = v
 
 
 class Index(PMODATA):
@@ -569,13 +589,17 @@ class PMO:
         return vertices
 
     def fix_scales(self) -> None:
-        maxx = max(max([vert.x for vert in self.vertices]),
+        max_u = max(max([vert.u for vert in self.vertices]),
+                   -1*min([vert.u for vert in self.vertices]))
+        max_v = max(max([vert.v for vert in self.vertices]),
+                   -1*min([vert.v for vert in self.vertices]))
+        max_x = max(max([vert.x for vert in self.vertices]),
                    -1*min([vert.x for vert in self.vertices]), self.header.scale["x"])
-        maxy = max(max([vert.y for vert in self.vertices]),
+        max_y = max(max([vert.y for vert in self.vertices]),
                    -1 * min([vert.y for vert in self.vertices]), self.header.scale["y"])
         maxz = max(max([vert.z for vert in self.vertices]),
                    -1 * min([vert.z for vert in self.vertices]), self.header.scale["z"])
-        abs_max = max(maxx, maxy, maxz)
+        abs_max = max(max_x, max_y, max_z)
         self.header.clippingDistance = abs_max
         new_scale = {
             "x": abs_max,
@@ -584,10 +608,14 @@ class PMO:
         }
         if self.header.scale == {"x": 0.0, "y": 0.0, "z": 0.0}:
             self.header.scale = new_scale
+        mesh: MeshHeader | FUMeshHeader
         for mesh in self.mesh_header:
             mesh.set_scale(new_scale)
+            mesh.set_uv_scale(max_u, max_v)
+        vert: Vertex
         for vert in self.vertices:
             vert.set_scale(new_scale)
+            vert.set_uv_scale(max_u, max_v)
 
     @property
     def bone_data(self) -> bytes:

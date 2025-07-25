@@ -164,8 +164,6 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             scale = {"x": abs_max, "y": abs_max, "z": abs_max}
             if pmo_ver == pmodel.P3RD_MODEL:
                 mesh_header.scale = scale
-            else:
-                mesh_header.uvscale = {"u": 1, "v": 1}
 
             print("Constructing materials...")
             mesh_header.materials = []

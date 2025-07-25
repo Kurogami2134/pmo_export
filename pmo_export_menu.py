@@ -95,7 +95,17 @@ class ExportPmo(Operator, ExportHelper):
     )
 
     def execute(self, context):
-        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.apply_modifiers, self.hard_tristripification, self.split)
+        return export(
+            context,
+            filepath=self.filepath,
+            version=self.type,
+            target=self.export_target,
+            prepare_pmo=self.prep_pmo,
+            cleanup_vg=self.cleanup_vg,
+            apply_modifiers=self.apply_modifiers,
+            hard_tristripification=self.hard_tristripification,
+            split=self.split
+        )
 
 
 def menu_func_export(self, context):

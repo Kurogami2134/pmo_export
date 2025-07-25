@@ -129,7 +129,20 @@ class ExportPac(Operator, ExportHelper):
 
     def execute(self, context):
         face = (self.upper_face, self.ears, self.nape, self.lower_face, self.nose, self.eyes, self.makeup1, self.makeup2)
-        return export(context, self.filepath, self.type, self.export_target, self.prep_pmo, self.cleanup_vg, self.p3rd_helmet, face, self.hairflags, self.phys_id, self.apply_modifiers, self.hard_tristripification)
+        return export(
+            context,
+            filepath=self.filepath,
+            version=self.type,
+            target=self.export_target,
+            prepare_pmo=self.prep_pmo,
+            cleanup_vg=self.cleanup_vg,
+            p3rd_helmet=self.p3rd_helmet,
+            face_flags=face,
+            hairflags=self.hairflags,
+            phys_id=self.phys_id,
+            app_modifiers=self.apply_modifiers,
+            hard_tristripification=self.hard_tristripification
+        )
     
     def draw(self, context):
         layout = self.layout
