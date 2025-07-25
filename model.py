@@ -597,7 +597,7 @@ class PMO:
                    -1*min([vert.x for vert in self.vertices]), self.header.scale["x"])
         max_y = max(max([vert.y for vert in self.vertices]),
                    -1 * min([vert.y for vert in self.vertices]), self.header.scale["y"])
-        maxz = max(max([vert.z for vert in self.vertices]),
+        max_z = max(max([vert.z for vert in self.vertices]),
                    -1 * min([vert.z for vert in self.vertices]), self.header.scale["z"])
         abs_max = max(max_x, max_y, max_z)
         self.header.clippingDistance = abs_max
