@@ -7,8 +7,15 @@ from struct import pack
 
 import bpy
 
+class NoSkeletonError(Exception):
+    ...
+
 def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None, app_modifiers: bool = False, hard_tristripification: bool = False):
     try:
+        skeletons = [obj for obj in bpy.data.objects if obj.type == "EMPTY" and not obj.parent]
+        if len(skeletons) == 0:
+            raise NoSkeletonError()
+        
         pac = PAC()
         ver = P3RD_MODEL if version == "1.2" else FU_MODEL
 
@@ -21,7 +28,7 @@ def export(context, filepath: str, version: str, target: str = 'scene', prepare_
 
         f = pac.add()
         
-        skeleton = [obj for obj in bpy.data.objects if obj.type == "EMPTY" and not obj.parent][0]
+        skeleton = skeletons[0]
         if skeleton.type == "EMPTY":
             bones = export_skel.bonesFromEmpties(skeleton)
         elif skeleton.type == "ARMATURE":
@@ -49,4 +56,7 @@ def export(context, filepath: str, version: str, target: str = 'scene', prepare_
         return {'FINISHED'}
     except ColorLimitError:
         warning(["Color count over 256."], "Error")
+        return {'CANCELLED'}
+    except NoSkeletonError:
+        warning(["Scene doesn't contain a valid skeleton."], "Error")
         return {'CANCELLED'}

@@ -12,6 +12,9 @@ except:
     check_output([sys.executable, '-m', 'pip', 'install', 'pyffi', f'--target={bpy.utils.user_resource("SCRIPTS", path="modules")}'])
     from pyffi.utils import trianglestripifier
 
+class MeshNotTriangulatedError(Exception):
+    ...
+
 
 def sort_vertices(obj):
     print("Sorting vertices...")
@@ -194,9 +197,12 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             ready = []
             for props, face_collection in metamats.items():
                 tris = {}
-                me = trianglestripifier.Mesh(faces=face_collection)
-                tristripifier = trianglestripifier.TriangleStripifier(me)
-                tristrips = tristripifier.find_all_strips()  # indices
+                try:
+                    me = trianglestripifier.Mesh(faces=face_collection)
+                    tristripifier = trianglestripifier.TriangleStripifier(me)
+                    tristrips = tristripifier.find_all_strips()  # indices
+                except:
+                    raise MeshNotTriangulatedError()
 
                 for tri in tristrips:
                     bones = set()
@@ -345,6 +351,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             warning(warnings)
 
         return (pmo, None) if not get_textures else (pmo, textures)
-    except ValueError:
+    except MeshNotTriangulatedError:
+        bpy.data.objects.remove(obj, do_unlink=True)
         warning(["Mesh is not triangulated."], "Error")
         return -1, None
