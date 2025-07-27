@@ -15,6 +15,9 @@ except:
 class MeshNotTriangulatedError(Exception):
     ...
 
+class MisnamedBoneError(Exception):
+    ...
+
 
 def sort_vertices(obj):
     print("Sorting vertices...")
@@ -203,14 +206,16 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                     tristrips = tristripifier.find_all_strips()  # indices
                 except:
                     raise MeshNotTriangulatedError()
-
-                for tri in tristrips:
-                    bones = set()
-                    for x in [[x.group for x in obj.data.vertices[v].groups] for v in tri]:
-                        for bone in x:
-                            bones.add((int(bpy.context.active_object.vertex_groups[bone].name.split(".")[-1]), obj.vertex_groups[bone].index))
-                    bones = tuple(bones)
-                    tris[bones] = tris[bones] + [tri] if bones in tris.keys() else [tri]
+                try:
+                    for tri in tristrips:
+                        bones = set()
+                        for x in [[x.group for x in obj.data.vertices[v].groups] for v in tri]:
+                            for bone in x:
+                                bones.add((int(bpy.context.active_object.vertex_groups[bone].name.split(".")[-1]), obj.vertex_groups[bone].index))
+                        bones = tuple(bones)
+                        tris[bones] = tris[bones] + [tri] if bones in tris.keys() else [tri]
+                except ValueError:
+                    raise MisnamedBoneError
                 
                 # Join all tristrips
                 if hard_tristripification:
@@ -354,4 +359,8 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
     except MeshNotTriangulatedError:
         bpy.data.objects.remove(obj, do_unlink=True)
         warning(["Mesh is not triangulated."], "Error")
+        return -1, None
+    except MisnamedBoneError:
+        bpy.data.objects.remove(obj, do_unlink=True)
+        warning(["One or more bones (vertex groups) do not follow the appropiate naming conventions."], "Error")
         return -1, None
