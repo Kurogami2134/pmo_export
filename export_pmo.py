@@ -12,12 +12,8 @@ except:
     check_output([sys.executable, '-m', 'pip', 'install', 'pyffi', f'--target={bpy.utils.user_resource("SCRIPTS", path="modules")}'])
     from pyffi.utils import trianglestripifier
 
-class TristripierError(Exception):
+class PmoExportError(Exception):
     ...
-
-class MisnamedBoneError(Exception):
-    ...
-
 
 def sort_vertices(obj):
     print("Sorting vertices...")
@@ -175,7 +171,10 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             mesh_header.materials = []
             for mat in obj.data.materials:
                 if mat.name not in materials:
-                    mat_id = int(mat.name.split("_")[-1]) if "_" in mat.name else len(materials)
+                    try:
+                        mat_id = int(mat.name.split("_")[-1]) if "_" in mat.name else len(materials)
+                    except ValueError:
+                        raise PmoExportError("One or more materials do not follow the appropriate naming conventions.")
                     materials[mat.name] = mat_id
                     tex = None
                     if get_textures:
@@ -207,9 +206,9 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                 except ValueError as e:
                     match e.args[0]:
                         case 'too many values to unpack (expected 3)':
-                            raise TristripierError("Mesh is not triangulated.")
+                            raise PmoExportError("Mesh is not triangulated.")
                         case 'Degenerate face.':
-                            raise TristripierError("Mesh contains degenerate face(s).")
+                            raise PmoExportError("Mesh contains degenerate face(s).")
                         case _:
                             raise
                 try:
@@ -221,7 +220,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                         bones = tuple(bones)
                         tris[bones] = tris[bones] + [tri] if bones in tris.keys() else [tri]
                 except ValueError:
-                    raise MisnamedBoneError
+                    raise PmoExportError("One or more bones (vertex groups) do not follow the appropriate naming conventions.")
                 
                 # Join all tristrips
                 if hard_tristripification:
@@ -362,11 +361,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             warning(warnings)
 
         return (pmo, None) if not get_textures else (pmo, textures)
-    except TristripierError as e:
+    except PmoExportError as e:
         bpy.data.objects.remove(obj, do_unlink=True)
         warning(e.args, "Error")
-        return -1, None
-    except MisnamedBoneError:
-        bpy.data.objects.remove(obj, do_unlink=True)
-        warning(["One or more bones (vertex groups) do not follow the appropiate naming conventions."], "Error")
         return -1, None
