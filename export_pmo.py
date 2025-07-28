@@ -12,7 +12,7 @@ except:
     check_output([sys.executable, '-m', 'pip', 'install', 'pyffi', f'--target={bpy.utils.user_resource("SCRIPTS", path="modules")}'])
     from pyffi.utils import trianglestripifier
 
-class MeshNotTriangulatedError(Exception):
+class TristripierError(Exception):
     ...
 
 class MisnamedBoneError(Exception):
@@ -204,8 +204,14 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                     me = trianglestripifier.Mesh(faces=face_collection)
                     tristripifier = trianglestripifier.TriangleStripifier(me)
                     tristrips = tristripifier.find_all_strips()  # indices
-                except:
-                    raise MeshNotTriangulatedError()
+                except ValueError as e:
+                    match e.args[0]:
+                        case 'too many values to unpack (expected 3)':
+                            raise TristripierError("Mesh is not triangulated.")
+                        case 'Degenerate face.':
+                            raise TristripierError("Mesh contains degenerate face(s).")
+                        case _:
+                            raise
                 try:
                     for tri in tristrips:
                         bones = set()
@@ -356,9 +362,9 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             warning(warnings)
 
         return (pmo, None) if not get_textures else (pmo, textures)
-    except MeshNotTriangulatedError:
+    except TristripierError as e:
         bpy.data.objects.remove(obj, do_unlink=True)
-        warning(["Mesh is not triangulated."], "Error")
+        warning(e.args, "Error")
         return -1, None
     except MisnamedBoneError:
         bpy.data.objects.remove(obj, do_unlink=True)
