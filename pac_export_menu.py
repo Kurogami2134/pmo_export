@@ -58,6 +58,12 @@ class ExportPac(Operator, ExportHelper):
         default=False
     )
 
+    do_fix_vg: BoolProperty(
+        name="Merge Submeshes",
+        description="Attempts to reduce submeshes by merging them based on material and bones",
+        default=False
+    )
+
     upper_face: BoolProperty(
         name="Forehead",
         default=True
@@ -141,7 +147,8 @@ class ExportPac(Operator, ExportHelper):
             hairflags=self.hairflags,
             phys_id=self.phys_id,
             app_modifiers=self.apply_modifiers,
-            hard_tristripification=self.hard_tristripification
+            hard_tristripification=self.hard_tristripification,
+            do_fix_vg=self.do_fix_vg
         )
     
     def draw(self, context):

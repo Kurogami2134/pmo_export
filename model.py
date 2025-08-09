@@ -113,6 +113,10 @@ class MeshHeader(PMODATA):
         byted += struct.pack("H", self.tristripCount) + struct.pack("H", self.cumulativeTristripCount)
         return byted
 
+    @property
+    def mat_remaps(self):
+        return list(set(mesh.tri_header.materialOffset for mesh in self.meshes))
+
 
 class FUMeshHeader(PMODATA):
     def __init__(self) -> None:
@@ -562,8 +566,8 @@ class PMO:
     @property
     def mat_remap_data(self) -> bytes:
         byted = b''
-        if self.ver != FU_MODEL:
-            return byted
+        #if self.ver != FU_MODEL:
+        #    return byted
         for x in self.mat_remaps:
             byted += struct.pack("b", x)  # [0]
         if len(byted) % 0x10:
@@ -660,9 +664,9 @@ class PMO:
         for index in self.indexes:
             index.write(file)
         # Write fu mat remap data
-        if self.ver == FU_MODEL:
-            file.seek(self.header.materialRemapOffset)
-            file.write(self.mat_remap_data)
+        #if self.ver == FU_MODEL:
+        file.seek(self.header.materialRemapOffset)
+        file.write(self.mat_remap_data)
     
     @property
     def mat_remaps(self):
@@ -704,13 +708,13 @@ class PMO:
         for tri_header in range(len(self.tristrips)):
             self.tristrips[tri_header].move(self.header.tristripHeaderOffset + self.tristrips[0].size*tri_header)
 
-        if self.ver == FU_MODEL:
-            self.header.materialRemapOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
-                                               len(self.tristrips))
-            self.header.boneDataOffset = self.header.materialRemapOffset + len(self.mat_remap_data)
-        else:
-            self.header.boneDataOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
-                                          len(self.tristrips))
+        #if self.ver == FU_MODEL:
+        self.header.materialRemapOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
+                                            len(self.tristrips))
+        self.header.boneDataOffset = self.header.materialRemapOffset + len(self.mat_remap_data)
+        #else:
+        #    self.header.boneDataOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
+        #                                  len(self.tristrips))
 
         self.header.materialDataOffset = self.header.boneDataOffset + len(self.bone_data)
         for mat in range(len(self.materials)):

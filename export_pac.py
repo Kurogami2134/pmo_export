@@ -10,7 +10,7 @@ import bpy
 class NoSkeletonError(Exception):
     ...
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None, app_modifiers: bool = False, hard_tristripification: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, p3rd_helmet: bool = False, face_flags: tuple[bool] | None = None, hairflags: int | None = None, phys_id: int | None = None, app_modifiers: bool = False, hard_tristripification: bool = False, do_fix_vg: bool = False):
     try:
         skeletons = [obj for obj in bpy.data.objects if obj.type == "EMPTY" and not obj.parent]
         if len(skeletons) == 0:
@@ -19,7 +19,7 @@ def export(context, filepath: str, version: str, target: str = 'scene', prepare_
         pac = PAC()
         ver = P3RD_MODEL if version == "1.2" else FU_MODEL
 
-        pmo, textures = export_pmo.export(ver, target, prepare_pmo, cleanup_vg, get_textures=True, apply_modifiers=app_modifiers, hard_tristripification=hard_tristripification)
+        pmo, textures = export_pmo.export(ver, target, prepare_pmo, cleanup_vg, get_textures=True, apply_modifiers=app_modifiers, hard_tristripification=hard_tristripification, do_fix_vg=do_fix_vg)
         if isinstance(pmo, int):
             return {'CANCELLED'}
         
