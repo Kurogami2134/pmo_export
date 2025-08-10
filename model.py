@@ -181,6 +181,7 @@ class TristripHeader(PMODATA):
         self.custom_tex_filter: bool = False
         self.texture_filter: int = 0
         self.shade_flat: int = 0
+        self.bypass_transform: bool = False
 
     @property
     def bone_data(self) -> bytes:
@@ -273,6 +274,8 @@ class Vertex(PMODATA):
         if self.weitrans is not None:
             data.extend([round(float(w)*self.weitrans) for w in self.w])
         if self.textrans is not None:
+            if self.textrans == 1:
+                self.uv_scale = {'u': 1.0, 'v': 1.0}
             data.append(max(0, round((float(self.u) / self.uv_scale['u']) * self.textrans)))
             data.append(max(0, round((float(self.v) / self.uv_scale['v']) * self.textrans)))
         if self.color_trans is not None:
@@ -282,6 +285,8 @@ class Vertex(PMODATA):
             data.append(round(float(self.j) * self.nortrans))
             data.append(round(float(self.k) * self.nortrans))
         if self.postrans is not None:
+            if self.postrans == 1:
+                self.scale = {'x': 1.0, 'y': 1.0, 'z': 1.0}
             data.append(round((float(self.x) / self.scale["x"]) * self.postrans))
             data.append(round((float(self.y) / self.scale["y"]) * self.postrans))
             data.append(round((float(self.z) / self.scale["z"]) * self.postrans))
@@ -386,9 +391,13 @@ class Mesh(PMODATA):
         self.vertices: None | list[Vertex] = None
         self.indices: None | list[Index] = None
         self.base_offset: None | int = None
-        self.bypass_transform: int = 0
+        #self.bypass_transform: int = 0
 
         self.face_order: None | int = None
+
+    @property
+    def bypass_transform(self) -> int:
+        return 1 if self.tri_header.bypass_transform else 0
 
     @property
     def max_index(self) -> int:

@@ -299,6 +299,8 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                     cumulativeWeightCount += tristrip_header.weightCount
                     tristrip_header.bones = [id for id, index in bones]
                     
+                    if "Bypass Transform" in props:
+                        tristrip_header.bypass_transform = props["Bypass Transform"] > 0
                     if "Backface Culling" in props:
                         tristrip_header.backface_culling = props["Backface Culling"] > 0
                     if "Alpha Test Enable" in props:
@@ -345,10 +347,16 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                     for v_idx in sorted(set(verts)):
                         vert = obj.data.vertices[v_idx]
                         vertex = pmodel.Vertex()
-                        vertex.nortrans = 0x7f
-                        vertex.postrans = 0x7fff
-                        vertex.textrans = 0x8000
-                        vertex.weitrans = 0x80
+                        if tristrip_header.bypass_transform:
+                            vertex.nortrans = 0x1
+                            vertex.postrans = 0x1
+                            vertex.textrans = 0x1
+                            vertex.weitrans = 0x1
+                        else:
+                            vertex.nortrans = 0x7f
+                            vertex.postrans = 0x7fff
+                            vertex.textrans = 0x8000
+                            vertex.weitrans = 0x80
                         vertex.verfor = me.vertex_format.struct
 
                         vertex.coords(vert.co.x, vert.co.y, vert.co.z)
