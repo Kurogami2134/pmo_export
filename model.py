@@ -771,6 +771,6 @@ class PMO:
                 fd.write(mesh.to_pmo(newfile=True))
 
         # Write fu mat remap data
-        if self.ver == FU_MODEL:
-            fd.seek(self.header.materialRemapOffset)
-            fd.write(self.mat_remap_data)
+        #if self.ver == FU_MODEL:
+        fd.seek(self.header.materialRemapOffset)
+        fd.write(self.mat_remap_data)
