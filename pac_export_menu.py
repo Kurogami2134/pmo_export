@@ -46,10 +46,11 @@ class ExportPac(Operator, ExportHelper):
         description="Triangulate mesh and split vertex for normals/uvs. (Same as pressing 'Prepare PMO' but won't have a permanent effect on the model)",
         items=(
             ("none", "None", "Do not run any prep script"),
+            ("simple", "Simple", "Just split seams and sharp edges"),
             ("*&", "*&'s", "Run *&'s script"),
             ("xenthos", "Xenthos'", "Run Xenthos' script"),
         ),
-        default="none"
+        default="simple"
     )
 
     cleanup_vg: BoolProperty(

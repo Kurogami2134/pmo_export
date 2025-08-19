@@ -1,6 +1,21 @@
 import bpy
 import bmesh
 
+# Simple pmo preps
+
+def sharp_seam_prep_pmo(obj, separate_islands: bool = False) -> None:
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    bpy.ops.mesh.select_mode(type='EDGE')
+    bpy.ops.mesh.select_all(action='DESELECT')
+    
+    bm = bmesh.from_edit_mesh(obj.data)
+    bmesh.ops.split_edges(bm, edges=[edge for edge in bm.edges if edge.seam or not edge.smooth])
+    bmesh.update_edit_mesh(obj.data)
+
+    bpy.ops.mesh.select_mode(type='VERT')
+    bpy.ops.object.mode_set(mode='OBJECT')
+
 # Xenthos' prepare pmo
 
 def xenthos_prep_pmo(obj) -> None:
@@ -32,10 +47,7 @@ def xenthos_prep_pmo(obj) -> None:
     bpy.ops.mesh.select_all(action='DESELECT')
     
     bm = bmesh.from_edit_mesh(obj.data)
-    edges_to_split = [edge for edge in bm.edges if edge.seam or not edge.smooth]
-
-    # Perform edge split without duplicating vertices unnecessarily
-    bmesh.ops.split_edges(bm, edges=edges_to_split)
+    bmesh.ops.split_edges(bm, edges=[edge for edge in bm.edges if edge.seam or not edge.smooth])
     bmesh.update_edit_mesh(obj.data)
 
     bpy.ops.object.mode_set(mode='OBJECT')

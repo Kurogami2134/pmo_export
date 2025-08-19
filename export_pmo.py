@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 from . import model as pmodel
-from .prep_pmo import xenthos_prep_pmo, asterisk_prep_pmo
+from .prep_pmo import xenthos_prep_pmo, asterisk_prep_pmo, sharp_seam_prep_pmo
 
 try:
     from pyffi.utils import trianglestripifier
@@ -160,6 +160,8 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                 fix_vg(obj)
 
             match prepare_pmo:
+                case "simple":
+                    sharp_seam_prep_pmo(obj)
                 case "xenthos":
                     xenthos_prep_pmo(obj)
                 case "*&":
