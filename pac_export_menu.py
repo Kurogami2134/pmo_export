@@ -161,6 +161,7 @@ class ExportPac(Operator, ExportHelper):
         layout.prop(self, 'export_target')
         layout.prop(self, 'prep_pmo')
         layout.prop(self, 'cleanup_vg')
+        layout.prop(self, 'do_fix_vg')
         layout.prop(self, 'apply_modifiers')
         layout.prop(self, 'hard_tristripification')
 

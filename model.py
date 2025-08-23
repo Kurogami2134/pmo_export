@@ -545,6 +545,7 @@ class PMO:
         self.header = PMOHeader()
         self.materials: list[Material] = []
         self.mesh_header: list[MeshHeader | FUMeshHeader] = []
+        self.use_mat_remap: bool = False
 
     def __repr__(self) -> str:
         string = (f'\nMeshes: {len(self.mesh_header)}\n'
@@ -575,8 +576,8 @@ class PMO:
     @property
     def mat_remap_data(self) -> bytes:
         byted = b''
-        #if self.ver != FU_MODEL:
-        #    return byted
+        if not (self.ver == FU_MODEL or self.use_mat_remap):
+            return byted
         for x in self.mat_remaps:
             byted += struct.pack("b", x)  # [0]
         if len(byted) % 0x10:
@@ -673,9 +674,9 @@ class PMO:
         for index in self.indexes:
             index.write(file)
         # Write fu mat remap data
-        #if self.ver == FU_MODEL:
-        file.seek(self.header.materialRemapOffset)
-        file.write(self.mat_remap_data)
+        if self.ver == FU_MODEL or self.use_mat_remap:
+            file.seek(self.header.materialRemapOffset)
+            file.write(self.mat_remap_data)
     
     @property
     def mat_remaps(self):
@@ -717,13 +718,13 @@ class PMO:
         for tri_header in range(len(self.tristrips)):
             self.tristrips[tri_header].move(self.header.tristripHeaderOffset + self.tristrips[0].size*tri_header)
 
-        #if self.ver == FU_MODEL:
-        self.header.materialRemapOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
-                                            len(self.tristrips))
-        self.header.boneDataOffset = self.header.materialRemapOffset + len(self.mat_remap_data)
-        #else:
-        #    self.header.boneDataOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
-        #                                  len(self.tristrips))
+        if self.ver == FU_MODEL or self.use_mat_remap:
+            self.header.materialRemapOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
+                                                len(self.tristrips))
+            self.header.boneDataOffset = self.header.materialRemapOffset + len(self.mat_remap_data)
+        else:
+            self.header.boneDataOffset = (self.header.tristripHeaderOffset + self.tristrips[0].size *
+                                          len(self.tristrips))
 
         self.header.materialDataOffset = self.header.boneDataOffset + len(self.bone_data)
         for mat in range(len(self.materials)):
@@ -771,6 +772,6 @@ class PMO:
                 fd.write(mesh.to_pmo(newfile=True))
 
         # Write fu mat remap data
-        #if self.ver == FU_MODEL:
-        fd.seek(self.header.materialRemapOffset)
-        fd.write(self.mat_remap_data)
+        if self.ver == FU_MODEL or self.use_mat_remap:
+            fd.seek(self.header.materialRemapOffset)
+            fd.write(self.mat_remap_data)

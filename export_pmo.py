@@ -103,12 +103,14 @@ def mat_tex(mat):
             return node
     return -1
 
-def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, get_textures: bool = False, apply_modifiers: bool = False, hard_tristripification: bool = False, do_fix_vg: bool = False) -> tuple[pmodel.PMO | int, list | None]:
+def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, get_textures: bool = False, 
+           apply_modifiers: bool = False, hard_tristripification: bool = False, do_fix_vg: bool = False, use_mat_remaps: bool = False) -> tuple[pmodel.PMO | int, list | None]:
     try:
         print("Exporting PMO...")
 
         pmo = pmodel.PMO()
         pmo.header.ver = pmo_ver
+        pmo.use_mat_remap = use_mat_remaps
         warnings = []
 
         match target:
@@ -291,6 +293,7 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             print("Creating meshes...")
             for mesh in ready:
                 print("Creating mesh...")
+                print(f'fuck: {len(mesh[1])}')
                 props = mesh[0]
                 for (bones, tri) in mesh[1].items():  # tri header/submesh creation
                     tristrip_header = pmodel.TristripHeader()

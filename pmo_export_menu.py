@@ -9,9 +9,11 @@ from . import export_pmo
 FU_MODEL = b'1.0\x00'
 P3RD_MODEL = b'102\x00'
 
-def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, apply_modifiers: bool = False, hard_tristripification: bool = False, split: bool = False, do_fix_vg: bool = False):
+def export(context, filepath: str, version: str, target: str = 'scene', prepare_pmo: str = "none", cleanup_vg: bool = False, apply_modifiers: bool = False, 
+           hard_tristripification: bool = False, split: bool = False, do_fix_vg: bool = False, use_mat_remaps: bool = False):
     ver = P3RD_MODEL if version == "1.2" else FU_MODEL
-    pmo, _ = export_pmo.export(ver, target=target, prepare_pmo=prepare_pmo, cleanup_vg=cleanup_vg, apply_modifiers=apply_modifiers, hard_tristripification=hard_tristripification, do_fix_vg=do_fix_vg)
+    pmo, _ = export_pmo.export(ver, target=target, prepare_pmo=prepare_pmo, cleanup_vg=cleanup_vg, apply_modifiers=apply_modifiers, 
+                               hard_tristripification=hard_tristripification, do_fix_vg=do_fix_vg, use_mat_remaps=use_mat_remaps)
     if isinstance(pmo, int):
         return {'CANCELLED'}
     if split:
@@ -83,6 +85,12 @@ class ExportPmo(Operator, ExportHelper):
         default=False
     )
 
+    use_mat_remaps: BoolProperty(
+        name="Save Material Remap Data",
+        description="Save Material Remap Data (Always on for FU)",
+        default=False
+    )
+
     apply_modifiers: BoolProperty(
         name="Apply Modifiers",
         description="Apply modifiers before exporting",
@@ -112,7 +120,8 @@ class ExportPmo(Operator, ExportHelper):
             apply_modifiers=self.apply_modifiers,
             hard_tristripification=self.hard_tristripification,
             split=self.split,
-            do_fix_vg=self.do_fix_vg
+            do_fix_vg=self.do_fix_vg,
+            use_mat_remaps=self.use_mat_remaps
         )
 
 
