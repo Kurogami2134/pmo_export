@@ -208,11 +208,12 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
                     if get_textures:
                         if not mat.pmo_overwrite_texture_index:
                             texture = mat_tex(mat)
-                            if texture != -1:
-                                if texture.image.name not in texture_indices:
-                                    texture_indices[texture.image.name] = len(textures)
-                                    textures.append(texture)
-                                tex = texture_indices[texture.image.name]
+                            if texture == -1:
+                                raise PmoExportError(f'Material ({mat.name}) is missing a texture. (or texture override)')
+                            if texture.image.name not in texture_indices:
+                                texture_indices[texture.image.name] = len(textures)
+                                textures.append(texture)
+                            tex = texture_indices[texture.image.name]
                     pmo_mats.append((mat_id, pmo_material(mat, tex=tex)))
                     
             # *&'s code for mats and pmo attributes
@@ -293,7 +294,6 @@ def export(pmo_ver: bytes, target: str = 'scene', prepare_pmo: str = "none", cle
             print("Creating meshes...")
             for mesh in ready:
                 print("Creating mesh...")
-                print(f'fuck: {len(mesh[1])}')
                 props = mesh[0]
                 for (bones, tri) in mesh[1].items():  # tri header/submesh creation
                     tristrip_header = pmodel.TristripHeader()

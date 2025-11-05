@@ -124,7 +124,7 @@ class GimImage:
         file.write(self.img_data)
         self.palette.write(file)
 
-    def add_padding_blocks(self, pixels) -> None:
+    def add_padding_blocks(self, pixels) -> list:
         img = []
         res = []
         for y in range(self.height):
@@ -136,7 +136,7 @@ class GimImage:
 
 class TMH:
     def __init__(self) -> None:
-        self.images: GimImage = []
+        self.images: list[GimImage] = []
 
     @property
     def img_count(self) -> int:
